@@ -1,0 +1,31 @@
+{   // 디버깅을 위한 설정들
+    // F5 눌렀을 때 (디버깅 할 때) 뭐해야 하는지 정희해 둔 파일
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug mdriver",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/malloc-lab/mdriver",
+            "args": [   // 최종 디버깅할 때는 이거 빼야함
+                "-V",
+                "-f",
+                "short1-bal.rep",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/malloc-lab",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Build mdriver"    // 명령어 실행 전 해야할 작업이 있다면 실행하라는 것
+            // 그럼 Build mdiver는 어디에 있나? -> tasks.json 파일에
+        }
+    ]
+}
