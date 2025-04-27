@@ -1,6 +1,6 @@
  /*********************************************************
-  * Version 3. Implicit + First-fit
-  *         + realloc() 오른쪽 확장 시, 필요 이상 남는 조각 분할
+  * Version 4. Implicit + First-fit
+  *         + realloc() 앞+현재+뒤 확장 & 필요 이상 남는 조각 분할
   ********************************************************/
 
 /*
@@ -320,7 +320,8 @@ static void *coalesce(void *bp)
  * 1. ptr이 NULL이면 malloc(size)로 새로 할당한다.
  * 2. size가 0이면 free(ptr) 후 NULL을 반환한다.
  * 3. 요청 크기가 기존 블록보다 작거나 같으면 in-place로 사용하거나 분할한다.
- * 4. 오른쪽 블록이 가용 상태이고, 합쳐서 충분하면 확장하여 사용하고 필요시 분할한다.
+ * 4-1. 오른쪽 블록이 가용 상태이고, 합쳐서 충분하면 확장하여 사용하고 필요시 분할한다.
+ * 4-2. 왼쪽 블록이 가용 상태고, 합쳐서 충분하면 확장하고 데이터를 이동해준다. 사용하고 필요시 분할한다.
  * 5. 위 방법으로 불가능하면 새 블록을 malloc하고, 기존 데이터를 복사한 후 free한다.
  */
 void *mm_realloc(void *ptr, size_t size)
@@ -356,6 +357,19 @@ void *mm_realloc(void *ptr, size_t size)
         PUT(FTRP(ptr), PACK(total, 1));                  // 새로운 footer 설정
         place(ptr, new_asize);  // 오른쪽 확장 후 split
         return ptr;
+    }
+        // (추가) (Case 2.5) 왼쪽이 가용 + 합치면 충분
+    else if (!GET_ALLOC(FTRP(PREV_BLKP(ptr))) &&
+    old_block + GET_SIZE(HDRP(PREV_BLKP(ptr))) >= new_asize)
+    {
+    void *prev_ptr = PREV_BLKP(ptr);
+    size_t total = old_block + GET_SIZE(HDRP(prev_ptr));
+    PUT(HDRP(prev_ptr), PACK(total, 1));
+    PUT(FTRP(prev_ptr), PACK(total, 1));
+
+    memmove(prev_ptr, ptr, old_payload); // 데이터 이동
+    place(prev_ptr, new_asize);
+    return prev_ptr;
     }
 
     // [Case 3] 위 방법으로도 안되면
