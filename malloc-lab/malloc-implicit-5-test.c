@@ -1,10 +1,9 @@
 /*********************************************************
- * Version 5. Implicit + Next-fit
- * Perf index = 46 (util) + 40 (thru) = 86/100
+ * Version 5. 엥 두번째 블록부터 하는데 왜 돌아감?
  ********************************************************/
 
 /*
- * mm-naive.c - 블록을 brk 포인터를 통해 순차적으로 할당하는1 가장 단순한 malloc 구현
+ * mm-naive.c - 블록을 brk 포인터를 통해 순차적으로 할당하는 가장 단순한 malloc 구현
  *
  * 이 구현에서는 블록에 헤더/푸터를 붙이지 않고,
  * 한번 할당된 블록은 재사용하거나 병합(coalesce)하지 않음.
@@ -82,8 +81,8 @@
  /* ==========================================
   * 전역 변수 정의 / Global Variables
   * ========================================== */
- static char *heap_listp = 0; // 힙의 시작 위치를 가리키는 전역 포인터
- static char *last_bp;        // 마지막 탐색 위치를 기록
+ static char *heap_listp = 0;    // 힙의 시작 위치를 가리키는 전역 포인터
+ static char *last_fitp;         // 마지막 탐색 위치를 기록
  
  /* ==========================================
   * 내부 함수 선언 / Internal Function Prototypes
@@ -103,7 +102,6 @@
   *    - 에필로그 헤더 (epilogue header)
   * 2. 프롤로그/에필로그를 설정하여 힙 일관성을 유지한다.
   * 3. 이후 첫 번째 가용 블록을 만들기 위해 CHUNKSIZE만큼 힙을 확장한다.
-  * 4. 작은 요청을 위해 작은 가용 블록을 미리 만들어둔다.
   */
  int mm_init(void)
  {
@@ -120,16 +118,14 @@
      PUT(heap_listp + (2 * WSIZE), PACK(DSIZE, 1)); // 프롤로그 푸터 (size = 8, alloc = 1)
      PUT(heap_listp + (3 * WSIZE), PACK(0, 1));     // 에필로그 헤더 (size = 0, alloc = 1)
  
-     heap_listp += (2 * WSIZE); // 프롤로그 블록의 payload 시작 위치로 이동
-     last_bp = heap_listp;      // last_bp 초기화
+     heap_listp += (2 * WSIZE);  // 프롤로그 블록의 payload 시작 위치로 이동
+     last_fitp = heap_listp;     // last_fitp 초기화
  
      // 첫 가용 블록을 만들기 위해 CHUNKSIZE만큼 힙 확장
-     if (extend_heap(CHUNKSIZE / WSIZE) == NULL) return -1;
-
-     // 큰 free 블록을 쪼개 fragmentation(조각화)가 일어나는 것 방지
-     //  → 작은 요청을 위해 가용 블록을 미리 준비해두는 전략
-     if (extend_heap(2) == NULL) return -1;
-
+     if (extend_heap(CHUNKSIZE / WSIZE) == NULL)
+         return -1;
+     // if (extend_heap(4) == NULL) return -1;  // 자주 사용되는 작은 블럭이 잘 처리되도록
+ 
      return 0;
  }
  
@@ -170,34 +166,35 @@
   * 1. 마지막 탐색 지점(last_bp)부터 힙 끝까지 순차적으로 탐색
   * 2. 가용 && 요청 크기 이상인 블록을 발견하면 해당 블록을 반환하고,
   *    last_bp를 해당 블록으로 갱신
-  * 3. 힙 끝까지 탐색해도 못 찾으면, heap_listp부터 last_bp까지 다시 탐색
+  * 3. 힙 끝까지 못 찾으면, heap_listp부터 last_bp까지 다시 탐색
   * 4. 두 번 순회해도 못 찾으면 NULL을 반환한다.
   *  ➔ First-fit과 다르게, 매번 heap_listp부터 처음부터 찾지 않고
   *    직전 탐색 위치(last_bp) 이후부터 찾음
   */
  static void *find_fit(size_t asize)
  {
-     void *bp = last_bp;    // 탐색 시작 지점을 last_bp로 초기화
+     void *bp = last_fitp;
  
-     // 1. last_bp부터 에필로그 전까지 탐색
+     // 1. last_fitp부터 에필로그까지 탐색
      for (bp = NEXT_BLKP(bp); GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
      {
          if (!GET_ALLOC(HDRP(bp)) && (asize <= GET_SIZE(HDRP(bp))))
          {
-             last_bp = bp;  // 찾은 블록으로 last_bp 갱신
-             return bp;     // 해당 블록 반환
+             last_fitp = bp; // 찾으면 last_fitp 갱신
+             return bp;
          }
      }
  
-     // 2. 못 찾으면 처음부터 last_bp까지 다시 탐색
-     for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
+     // 2. 못 찾으면 처음부터 last_fitp까지 다시 탐색
+     //for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0 && bp != last_fitp; bp = NEXT_BLKP(bp))
+     for (bp = heap_listp; bp < last_fitp; bp = NEXT_BLKP(bp))
      {
+         bp = NEXT_BLKP(bp);
          if (!GET_ALLOC(HDRP(bp)) && (asize <= GET_SIZE(HDRP(bp))))
          {
-             last_bp = bp; // 찾은 블록으로 last_bp 갱신
+             last_fitp = bp; // 찾으면 last_fitp 갱신
              return bp;
          }
-         if (bp == last_bp) break;
      }
      return NULL; // No fit - NULL 반환
  }
@@ -226,7 +223,8 @@
          PUT(FTRP(bp), PACK(csize - asize, 0));
      }
      else
-     {   // 분할할 수 없는 크기면 전체 블록 할당
+     {
+         // 분할할 수 없는 크기면 전체 블록 할당
          PUT(HDRP(bp), PACK(csize, 1));
          PUT(FTRP(bp), PACK(csize, 1));
      }
@@ -261,7 +259,7 @@
      if ((bp = find_fit(asize)) != NULL)
      {
          place(bp, asize); // 블록 배치 및 분할 가능
-         last_bp = bp;   // 추가함
+         last_fitp = bp;     // 추가함
          return bp;
      }
  
@@ -270,9 +268,9 @@
      if ((bp = extend_heap(extendsize / WSIZE)) == NULL)
          return NULL;
  
-     bp = coalesce(bp); // 예외 free block 병합해 관리 개선
-     place(bp, asize); // 확장된 블록에 배치
-     last_bp = bp;
+     // bp = coalesce(bp); // 예외 free block 병합해 관리 개선
+     place(bp, asize);  // 확장된 블록에 배치
+     last_fitp = bp;
      return bp;
  }
  
@@ -300,7 +298,7 @@
   * coalesce - 인접한 가용 블록들을 하나로 병합
   * 1. 앞/뒤 블록의 할당 여부 확인
   * 2. 경우(case 1~4)에 따라 병합 처리
-  * 3. 병합 후 last_bp를 갱신하여 next-fit 탐색의 시작점을 유지
+  * 3. 병합된 블록의 포인터 반환
   */
  static void *coalesce(void *bp)
  {
@@ -327,12 +325,13 @@
      }
      else
      { // Case 4: 양쪽 모두 free - 양쪽 병합
-         size += GET_SIZE(HDRP(PREV_BLKP(bp))) + GET_SIZE(FTRP(NEXT_BLKP(bp)));
+         size += GET_SIZE(HDRP(PREV_BLKP(bp)))
+                 + GET_SIZE(FTRP(NEXT_BLKP(bp)));
          PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0)); // 이전 블록 헤더에 새 사이즈 저장
          PUT(FTRP(NEXT_BLKP(bp)), PACK(size, 0)); // 다음 블록 푸터에 새 사이즈 저장
          bp = PREV_BLKP(bp);
      }
-     last_bp = bp;  // next-fit을 위해 last_bp를 현재 or 병합된 블록으로 갱신
+     last_fitp = bp;
      return bp;
  }
  

@@ -1,6 +1,6 @@
 /*********************************************************
  * Version 5. Implicit + Next-fit
- * Perf index = 46 (util) + 40 (thru) = 86/100
+ * Perf index = 44 (util) + 40 (thru) = 84/100
  ********************************************************/
 
 /*
@@ -103,7 +103,6 @@
   *    - 에필로그 헤더 (epilogue header)
   * 2. 프롤로그/에필로그를 설정하여 힙 일관성을 유지한다.
   * 3. 이후 첫 번째 가용 블록을 만들기 위해 CHUNKSIZE만큼 힙을 확장한다.
-  * 4. 작은 요청을 위해 작은 가용 블록을 미리 만들어둔다.
   */
  int mm_init(void)
  {
@@ -121,15 +120,11 @@
      PUT(heap_listp + (3 * WSIZE), PACK(0, 1));     // 에필로그 헤더 (size = 0, alloc = 1)
  
      heap_listp += (2 * WSIZE); // 프롤로그 블록의 payload 시작 위치로 이동
-     last_bp = heap_listp;      // last_bp 초기화
+     last_bp = heap_listp;    // last_bp 초기화
  
      // 첫 가용 블록을 만들기 위해 CHUNKSIZE만큼 힙 확장
      if (extend_heap(CHUNKSIZE / WSIZE) == NULL) return -1;
-
-     // 큰 free 블록을 쪼개 fragmentation(조각화)가 일어나는 것 방지
-     //  → 작은 요청을 위해 가용 블록을 미리 준비해두는 전략
-     if (extend_heap(2) == NULL) return -1;
-
+ 
      return 0;
  }
  
