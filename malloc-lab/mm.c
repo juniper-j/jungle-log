@@ -1,3 +1,8 @@
+ /*********************************************************
+  * Version 2. Implicit + First-fit
+  *         + realloc() 개선
+  ********************************************************/
+
 /*
  * mm-naive.c - 블록을 brk 포인터를 통해 순차적으로 할당하는 가장 단순한 malloc 구현
  *
@@ -318,22 +323,50 @@ static void *coalesce(void *bp)
  */
 void *mm_realloc(void *ptr, size_t size)
 {
-    void *oldptr = ptr;
-    void *newptr;
-    size_t copySize;
+    if (ptr == NULL) return mm_malloc(size);
 
-    // 새로운 크기만큼 블록 먼저 확보
-    newptr = mm_malloc(size);
-    if (newptr == NULL)
+    if (size == 0) {
+        mm_free(ptr);
+        return NULL;
+    }
+
+    size_t old_block = GET_SIZE(HDRP(ptr));     // 기존 블록의 전체 크기 (헤더+푸터 포함)
+    size_t old_payload = old_block - DSIZE;     // 기존 블록의 payload 크기만 추출 (헤더+푸터 제외)
+
+    size_t new_asize;         // 새로운 요청 크기를 정렬+오버헤드 포함해서 계산
+
+    // [Case 1] 새 요청이 기존 블록 크기보다 작거나 같으면
+    // => 현재 블록을 분할하거나 그대로 사용 (in-place)
+    if (size <= DSIZE)  new_asize = 2 * DSIZE;
+    else new_asize = DSIZE * ((size + (DSIZE) + (DSIZE - 1)) / DSIZE);
+    
+    if (new_asize <= old_block)
+    {
+        place(ptr, new_asize);   // 필요하면 분할
+        return ptr;              // 주소 그대로 반환
+    }
+
+    // [Case 2] 오른쪽 블록이 가용 상태이고,
+    //          합쳐서 충분한 크기가 되면 in-place 확장
+    if (!GET_ALLOC(HDRP(NEXT_BLKP(ptr))) &&
+        old_block + GET_SIZE(HDRP(NEXT_BLKP(ptr))) >= new_asize)
+    {
+        size_t total = old_block + GET_SIZE(HDRP(NEXT_BLKP(ptr)));   // 합친 블록 크기
+        PUT(HDRP(ptr), PACK(total, 1));                  // 새로운 header 설정
+        PUT(FTRP(ptr), PACK(total, 1));                  // 새로운 footer 설정
+        return ptr;  // 역시 주소 그대로 사용
+    }
+
+    // [Case 3] 위 방법으로도 안되면
+    // => 새 블록을 malloc해서 데이터 복사 후 기존 블록 free
+    void *new_ptr = mm_malloc(size);
+    if (new_ptr == NULL)
         return NULL;
 
-    copySize = GET_SIZE(HDRP(oldptr)) - DSIZE;  // 헤더/푸터 제외한 페이로드 크기
+    // 복사할 크기는 기존 payload vs 요청 size 중 작은 쪽
+    size_t copy = old_payload < size ? old_payload : size;
+    memmove(new_ptr, ptr, copy);   // 새 블록에 데이터 복사 (memmove: 겹칠 수도 있으니 안전 복사)
 
-    // 실제 복사할 크기는 요청한 size와 기존 크기 중 작은 값
-    if (size < copySize) copySize = size;
-
-    memcpy(newptr, oldptr, copySize);   // 새 블록에 데이터 복사 (old → new)
-    mm_free(oldptr);                    // 이전 블록 free
-
-    return newptr;
+    mm_free(ptr);                  // 기존 블록 해제
+    return new_ptr;                // 새 블록 주소 반환
 }
