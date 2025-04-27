@@ -1,6 +1,6 @@
  /*********************************************************
-  * Version 2. Implicit + First-fit
-  *         + realloc() 요청 크기에 따라 유지 or 오른쪽 확장
+  * Version 3. Implicit + First-fit
+  *         + realloc() 오른쪽 확장 시, 필요 이상 남는 조각 분할
   ********************************************************/
 
 /*
@@ -320,8 +320,8 @@ static void *coalesce(void *bp)
  * 1. ptr이 NULL이면 malloc(size)로 새로 할당한다.
  * 2. size가 0이면 free(ptr) 후 NULL을 반환한다.
  * 3. 요청 크기가 기존 블록보다 작거나 같으면 in-place로 사용하거나 분할한다.
- * 4. 오른쪽 블록이 가용 상태이고 크기가 충분하면 병합하여 in-place로 확장한다.
- * 5. 둘 다 안 되면 새 블록을 malloc하고 데이터를 복사한 뒤 기존 블록을 free한다.
+ * 4. 오른쪽 블록이 가용 상태이고, 합쳐서 충분하면 확장하여 사용하고 필요시 분할한다.
+ * 5. 위 방법으로 불가능하면 새 블록을 malloc하고, 기존 데이터를 복사한 후 free한다.
  */
 void *mm_realloc(void *ptr, size_t size)
 {
@@ -334,36 +334,34 @@ void *mm_realloc(void *ptr, size_t size)
 
     size_t old_block = GET_SIZE(HDRP(ptr));     // 기존 블록의 전체 크기 (헤더+푸터 포함)
     size_t old_payload = old_block - DSIZE;     // 기존 블록의 payload 크기만 추출 (헤더+푸터 제외)
-
     size_t new_asize;         // 새로운 요청 크기를 정렬+오버헤드 포함해서 계산
 
-    // [Case 1] 새 요청이 기존 블록 크기보다 작거나 같으면
-    // => 현재 블록을 분할하거나 그대로 사용 (in-place)
     if (size <= DSIZE)  new_asize = 2 * DSIZE;
     else new_asize = DSIZE * ((size + (DSIZE) + (DSIZE - 1)) / DSIZE);
-    
-    if (new_asize <= old_block)
-    {
+
+    // [Case 1] 새 요청이 기존 블록 크기보다 작거나 같으면
+    //          현재 블록을 분할하거나 그대로 사용 (in-place)
+    if (new_asize <= old_block) {
         place(ptr, new_asize);   // 필요하면 분할
         return ptr;              // 주소 그대로 반환
     }
 
     // [Case 2] 오른쪽 블록이 가용 상태이고,
-    //          합쳐서 충분한 크기가 되면 in-place 확장
+    //          합쳐서 충분한 크기가 되면 in-place 확장하고, 필요시 분할
     if (!GET_ALLOC(HDRP(NEXT_BLKP(ptr))) &&
         old_block + GET_SIZE(HDRP(NEXT_BLKP(ptr))) >= new_asize)
     {
         size_t total = old_block + GET_SIZE(HDRP(NEXT_BLKP(ptr)));   // 합친 블록 크기
         PUT(HDRP(ptr), PACK(total, 1));                  // 새로운 header 설정
         PUT(FTRP(ptr), PACK(total, 1));                  // 새로운 footer 설정
-        return ptr;  // 역시 주소 그대로 사용
+        place(ptr, new_asize);  // 오른쪽 확장 후 split
+        return ptr;
     }
 
     // [Case 3] 위 방법으로도 안되면
     // => 새 블록을 malloc해서 데이터 복사 후 기존 블록 free
     void *new_ptr = mm_malloc(size);
-    if (new_ptr == NULL)
-        return NULL;
+    if (new_ptr == NULL) return NULL;   // 기존 ptr은 살아 있음 free하지 않음)
 
     // 복사할 크기는 기존 payload vs 요청 size 중 작은 쪽
     size_t copy = old_payload < size ? old_payload : size;
