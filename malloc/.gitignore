@@ -1,0 +1,32 @@
+# macOS 시스템 파일 무시
+.DS_Store
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+.fseventsd
+._*
+
+# vscode 설정 파일 무시 (필요하면 제외 가능)
+.vscode/
+
+# 빌드 결과물 무시
+*.o
+*.out
+*.exe
+
+# Makefile로 생성되는 바이너리 무시
+mdriver
+
+# 백업 파일 무시
+*~
+*.swp
+*.swo
+
+# 파이썬 캐시 (만약 Python 스크립트 사용할 경우)
+__pycache__/
+*.pyc
+
+# 로그 파일 무시
+*.log
+
