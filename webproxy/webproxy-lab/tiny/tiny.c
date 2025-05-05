@@ -160,7 +160,7 @@ void doit(int fd)
   if (!Rio_readlineb(&rio, buf, MAXLINE))   // 요청 라인 읽기 (예: GET /index.html HTTP/1.0)
     return;   // 클라이언트가 연결을 끊으면 아무 작어도 안 함
 
-  printf("==== Request Line ====\n%s", buf);      // ← [숙제문제 11.6.A] 요청 라인 echo 추가(디버깅용), [숙제문제 11.6.C] HTTP 버전 출력
+  printf("==== Request Line ====\n%s", buf);      // ← [HW 11.6.A] 요청 라인 echo 추가(디버깅용), [HW 11.6.C] HTTP 버전 출력
   sscanf(buf, "%s %s %s", method, uri, version);  // 요청 라인에서 method, uri, version 추출
 
   /* Parse URI from GET request */
@@ -218,7 +218,7 @@ void read_requesthdrs(rio_t *rp)
   Rio_readlineb(rp, buf, MAXLINE);    // 첫 줄 읽기
   while (strcmp(buf, "\r\n"))         // 빈 줄이 아니면 계속
   {
-    printf("==== Header ====\n%s", buf);  // ← [숙제문제 11.6.A] 읽은 요청 헤더 echo 추가(디버깅용)
+    printf("==== Header ====\n%s", buf);  // ← [HW 11.6.A] 읽은 요청 헤더 echo 추가(디버깅용)
     Rio_readlineb(rp, buf, MAXLINE);      // 다음 줄 읽기
   }
   return;
@@ -296,7 +296,7 @@ void get_filetype(char *filename, char *filetype)
     strcpy(filetype, "image/png");
   else if (strstr(filename, ".jpg"))  // JPEG 이미지 (.jpg)
     strcpy(filetype, "image/jpeg");
-  else if (strstr(filename, ".mp4"))  // ← [숙제문제 11.7] MPG 비디어 파일 처리 (최신 브라우저는 MPG 재생 지원하지 않으므로 MP4로 대체 재생해보기)
+  else if (strstr(filename, ".mp4"))  // ← [HW 11.7] MPG 비디어 파일 처리 (최신 브라우저는 MPG 재생 지원하지 않으므로 MP4로 대체 재생해보기)
     strcpy(filetype, "video/mp4");
   else                                // 확장자가 없거나 위에 포함되지 않음 → 일반 텍스트 파일로 간주
     strcpy(filetype, "text/plain");   // 기본값
@@ -320,12 +320,14 @@ void get_filetype(char *filename, char *filetype)
  ************************************************/
 void serve_static(int fd, char *filename, int filesize)
 {
-  int srcfd;                        // 디스크에서 파일을 읽기 위한 파일 디스크립터
-  char *srcp;                       // 메모리에 매핑된 파일 주소
+  int srcfd;                       // 디스크에서 파일을 읽기 위한 파일 디스크립터
+  // char *srcp;                      // [as-is] mmap으로 메모리에 매핑된 파일 주소
+  char *filebuf;                   // ← [HW 11.9] malloc으로 할당된 버퍼
   char filetype[MAXLINE];          // MIME 타입 (Content-Type)
   char buf[MAXBUF];                // HTTP 응답 헤더 버퍼
   char *p = buf;                   // 헤더 작성에 사용할 포인터
   int n, remaining = sizeof(buf);  // snprintf로 남은 버퍼 공간 계산
+  rio_t rio;                       // ← [HW 11.9] robust I/O를 위한 rio 구조체
 
   // [1] MIME 타입 결정 (ex: text/html, image/png)
   get_filetype(filename, filetype);
@@ -350,6 +352,11 @@ void serve_static(int fd, char *filename, int filesize)
   Rio_writen(fd, buf, strlen(buf));
   printf("Response headers:\n%s", buf);
 
+  // ============================================
+  // [구 버전] mmap 기반 파일 전송
+  // ============================================
+
+  /*
   // [4] 요청된 파일 열기 (읽기 전용)
   srcfd = Open(filename, O_RDONLY, 0);
 
@@ -359,6 +366,27 @@ void serve_static(int fd, char *filename, int filesize)
 
   Rio_writen(fd, srcp, filesize); // [6] 매핑된 파일 내용을 클라이언트로 전송
   Munmap(srcp, filesize);         // [7] 매핑 해제
+  */
+
+  // ============================================
+  // [신 버전] malloc + rio_readn 기반 전송
+  // ============================================
+
+  // [4] 파일 열기 및 robust read 준비
+  srcfd = Open(filename, O_RDONLY, 0);  // 읽기 전용으로 파일 열기
+  Rio_readinitb(&rio, srcfd);           // Robust read를 위한 초기화 (파일 디스크립터에 대해 설정)
+
+  filebuf = (char *)Malloc(filesize);  // [5] 파일 전체 크기만큼 동적 메모리 버퍼를 할당
+
+  // [6] Robust read로 파일 전체 내용을 filebuf에 읽어오기
+  if (Rio_readn(srcfd, filebuf, filesize) != filesize) {
+    fprintf(stderr, "Error: Could not read file %s completely\n, filename");
+    exit(1);
+  }
+  Close(srcfd); // 더 이상 파일 디스크립터는 필요 없으므로 닫기
+
+  Rio_writen(fd, filebuf, filesize);  // [7] 읽은 파일 내용을 클라이언트에게 전송
+  Free(filebuf);                      // [8] 메모리 해제
 }
 
 
