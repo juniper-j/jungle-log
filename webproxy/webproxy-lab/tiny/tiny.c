@@ -79,6 +79,7 @@ void serve_dynamic(int fd, char *filename, char *cgiargs);  // 동적 콘텐츠(
 void clienterror(int fd, char *cause, char *errnum, 
                  char *shortmsg, char *longmsg);            // 클라이언트에 에러 메시지 HTML 형식으로 응답
 
+
 /************************************************
  * main - Tiny 웹서버의 진입점
  *
@@ -123,6 +124,7 @@ int main(int argc, char **argv)
     Close(connfd); // 연결 종료
   }
 }
+
 
 /************************************************
  * doit - 클라이언트의 하나의 HTTP 요청을 처리
@@ -435,6 +437,7 @@ void serve_dynamic(int fd, char *filename, char *cgiargs)
   }
   Wait(NULL); // [4] 부모 프로세스는 자식이 끝날 때까지 기다림
 }
+
 
 /************************************************
  * clienterror - 클라이언트에 HTML 형식 오류 메시지 전송

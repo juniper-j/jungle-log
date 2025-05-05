@@ -2,12 +2,13 @@
  * adder.c - a minimal CGI program that adds two numbers together
  */
 /* $begin adder */
+
 #include "csapp.h"
 
 int main(void)
 {
   char *buf, *p;
-  char raw_query[MAXLINE];       // 원본 QUERY_STRING 보존용
+  char raw_query[MAXLINE];       // 🔹 원본 QUERY_STRING 보존용
   char arg1[MAXLINE], arg2[MAXLINE], content[MAXLINE];
   int n1 = 0, n2 = 0;
 
@@ -35,6 +36,7 @@ int main(void)
   /* Generate the HTTP response */
   printf("Content-type: text/html\r\n");
   printf("Content-length: %d\r\n", (int)strlen(content));
+  
   printf("\r\n");
   printf("%s", content);
   fflush(stdout);

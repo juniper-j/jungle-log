@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<!-- Extra -->
+<head>
+    <meta charset="UTF-8">
+    <title>CGI 덧셈기</title>
+    <style>
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background: #f8f9fa;
+            padding: 40px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #343a40;
+        }
+
+        form {
+            background: #ffffff;
+            display: inline-block;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+        }
+
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        input[type="text"] {
+            padding: 8px;
+            width: 180px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        input[type="submit"] {
+            display: block;
+            margin: 20px auto 0;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #0b5ed7;
+        }
+    </style>
+</head>
+
+<!-- [HW 11.10] CGI Adder to HTML w/ GET Method -->
+<body>
+    <h1>CGI 덧셈기</h1>
+
+    <form action="/cgi-bin/adder" method="GET">
+        <label for="num1">첫 번째 숫자:</label>
+        <input type="text" name="num1" id="num1" required>
+
+        <label for="num2">두 번째 숫자:</label>
+        <input type="text" name="num2" id="num2" required>
+
+        <input type="submit" value="계산하기"><br>
+    </form>
+</body>
+</html>
