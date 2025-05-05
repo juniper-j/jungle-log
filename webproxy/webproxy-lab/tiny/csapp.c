@@ -927,6 +927,9 @@
  }
  
  // Rio_readlineb - rio_readlineb의 래퍼 함수, 실패 시 에러 출력 후 종료
+ // 반환값 rc > 0: 정상적으로 그만큼의 문자 수를 읽음
+ //      rc = 0: EOF (End of File) → 클라이언트가 소켓을 닫음
+ //      rc < 0: 읽는 도중 에러 발생 (ex. 인터럽트, 잘못된 FD 등)   
  ssize_t Rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen) 
  {
      ssize_t rc;

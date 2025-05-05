@@ -155,13 +155,27 @@ void doit(int fd)
   Rio_readinitb(&rio, fd);    // 클라이언트 소켓과 연결된 rio 초기화
 
   /* 
-  책 코드랑 다름. 이걸 체크 안하면, 클라이언트가 소켓을 닫았을 때 readlineb()은 0을 리턴함
+  !!!책 코드랑 다름!!! 클라이언트가 소켓을 닫았거나 더 보낼 데이터가 없을 때 readlineb()은 0을 리턴함 (= False)
   그런데 그걸 검사하지 않으면 buf에는 아무 내용도 없고, sscanf()는 이상한 값 또는 쓰레기 값을 파싱함.
-	그 결과, method, uri, version이 정상 해석되지 않고, 이상한 파일 경로로 무한하게 loop를 돌게 됨. 
+	그 결과, sscanf(buf, "%s %s %s", method, uri, version); 호출에서 비정상적인 값이 파싱되며, 
+  파싱된 이상한 경로를 기반으로 한 stat()은 실패하지 않을 수 있음 (그래서 무한루프에 빠질 때도 있고 아닐 때도 있었던 것)
+  결국 serve_static()이나 serve_dynamic()이 계속 실행되면서 header 출력만 반복하는 loop를 돌게 됨
+  
+  Q1. 왜 serve_static() 호출 시에는 발생하지 않고 serve_dynamic() 호출 시에만 문제가 발생했는가?
+  A1. static은 정상파일을 mmap, write, munmap 순서대로 수행함
+      출력은 딱 한번만 일어나기 때문에 메모리가 이상해도 정해진 사이즈만큼만 write 하고 끝남
+      반면, dynamic은 외부 프로그램(CGI)을 실행하는데, 자식 프로세스 fork → stdout을 클라이언트 소켓으로 연결(Dup2)
+      → Execve로 CGI 실행 시, [1] CGI 프로그램이 입력을 제대로 못받거나, QUERY_STRING이 이상하면 무한루프 가능
+      혹은 [2] Execve() 실패 시 그 이후 perror()도 계속 찍히고 이 메시지가 계속 소켓으로 write 될 수 있음
+  
+  Q2. 무한 출력 시 serve_static() 또는 serve_dynamic()에서 어디까지 실행됐는가?
+  A2. dynamic 코드 중 "Rio_writen(fd, buf, strlen(buf)); // [2] 헤더를 클라이언트로 전송"가 계속 실행됨
+      이유는 serve_dynamic()이 호출된 후, 그 안에서 일부 코드를 실행하지만 클라이언트가 이미 닫혔기 때문에
+      write은 실패하거나 무시됨. 클라이언트는 응답을 못받고, 브라우저는 자동 재시도하거나 새 요청을 보냄 (Connection: Keep-alive) 
   */
   // [1] 요청 라인 읽기 (예: GET /index.html HTTP/1.0)
-  if (!Rio_readlineb(&rio, buf, MAXLINE))
-    return;   // 클라이언트가 연결을 끊으면 아무 작어도 안 함
+  if (!Rio_readlineb(&rio, buf, MAXLINE)) // rc == 0이면 false, 요청 처리 중단
+    return;                               // 즉, 클라이언트가 연결을 끊으면 아무 작업도 안 함
   printf("==== Request Line ====\n%s", buf);      // ← [HW 11.6.A] 요청 라인 echo 추가(디버깅용), [HW 11.6.C] HTTP 버전 출력
   sscanf(buf, "%s %s %s", method, uri, version);  // 요청 라인에서 method, uri, version 추출
 
@@ -427,7 +441,7 @@ void serve_dynamic(int fd, char *filename, char *cgiargs, char *method)
   char *p = buf;
   int n, remaining = sizeof(buf);
 
-  // [1] 응답 헤더 작성
+  // [1] HTTP 응답 헤더 작성
   n = snprintf(p, remaining, "HTTP/1.0 200 OK\r\n");
   p += n; remaining -= n;
 
