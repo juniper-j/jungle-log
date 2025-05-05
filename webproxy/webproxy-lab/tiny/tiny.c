@@ -73,9 +73,9 @@
 void doit(int fd);                  // 클라이언트 요청 처리 핵심 함수
 void read_requesthdrs(rio_t *rp);   // 요청 헤더를 읽고 출력 (단순히 \r\n까지 읽음)
 int parse_uri(char *uri, char *filename, char *cgiargs);    // URI에서 filename과 CGI arguments 분리
-void serve_static(int fd, char *filename, int filesize);    // 정적 콘텐츠 제공
+void serve_static(int fd, char *filename, int filesize, char *method);    // 정적 콘텐츠 제공
 void get_filetype(char *filename, char *filetype);          // 파일 확장자로부터 MIME 타입 추정
-void serve_dynamic(int fd, char *filename, char *cgiargs);  // 동적 콘텐츠(CGI) 실행 및 응답
+void serve_dynamic(int fd, char *filename, char *cgiargs, char *method);  // 동적 콘텐츠(CGI) 실행 및 응답
 void clienterror(int fd, char *cause, char *errnum, 
                  char *shortmsg, char *longmsg);            // 클라이언트에 에러 메시지 HTML 형식으로 응답
 
@@ -145,7 +145,7 @@ void doit(int fd)
   int is_static;              // 정적 콘텐츠 여부 플래그
   struct stat sbuf;           // 파일의 상태 정보 저장용 구조체
   char buf[MAXLINE];          // 요청 라인 및 헤더를 저장할 버퍼
-  char method[MAXLINE];       // 요청 메서드 (예: GET)
+  char method[MAXLINE];       // 요청 메서드 (예: GET, HEAD)
   char uri[MAXLINE];          // 요청 URI (예: /index.html)
   char version[MAXLINE];      // HTTP 버전
   char filename[MAXLINE];     // 로컬에서 찾을 파일 경로
@@ -159,14 +159,23 @@ void doit(int fd)
   그런데 그걸 검사하지 않으면 buf에는 아무 내용도 없고, sscanf()는 이상한 값 또는 쓰레기 값을 파싱함.
 	그 결과, method, uri, version이 정상 해석되지 않고, 이상한 파일 경로로 무한하게 loop를 돌게 됨. 
   */
-  if (!Rio_readlineb(&rio, buf, MAXLINE))   // 요청 라인 읽기 (예: GET /index.html HTTP/1.0)
+  // [1] 요청 라인 읽기 (예: GET /index.html HTTP/1.0)
+  if (!Rio_readlineb(&rio, buf, MAXLINE))
     return;   // 클라이언트가 연결을 끊으면 아무 작어도 안 함
-
   printf("==== Request Line ====\n%s", buf);      // ← [HW 11.6.A] 요청 라인 echo 추가(디버깅용), [HW 11.6.C] HTTP 버전 출력
   sscanf(buf, "%s %s %s", method, uri, version);  // 요청 라인에서 method, uri, version 추출
 
+  // [2] GET과 HEAD만 지원
+  if (strcasecmp(method, "GET") && strcasecmp(method, "HEAD")) {
+    clienterror(fd, method, "501", "Not Implemented",
+                "Tiny does not implement this method");
+    return;
+  }
+
   /* Parse URI from GET request */
   read_requesthdrs(&rio);                         // 요청 헤더 읽고 버리기 (\r\n까지 반복)
+  
+  // [3] URI 파싱
   is_static = parse_uri(uri, filename, cgiargs);  // URI 분석 → filename과 CGI 인자 추출, 정적/동적 여부 판단
   if (stat(filename, &sbuf) < 0)                  // 요청한 파일의 존재 여부 확인
   {
@@ -184,7 +193,7 @@ void doit(int fd)
                   "Tiny couldn't read the file");
       return;
     }
-    serve_static(fd, filename, sbuf.st_size);   // 정상적인 정적 파일이면 전송
+    serve_static(fd, filename, sbuf.st_size, method);   // 정상적인 정적 파일이면 전송 ← [HW 11.11] HTTP HEAD 메소드 지원
   }
   else
   {
@@ -195,7 +204,7 @@ void doit(int fd)
                   "Tiny couldn't run the CGI program");
       return;
     }
-    serve_dynamic(fd, filename, cgiargs);     // CGI 프로그램 실행
+    serve_dynamic(fd, filename, cgiargs, method);     // CGI 프로그램 실행 ← [HW 11.11] HTTP HEAD 메소드 지원
   }
 }
 
@@ -320,7 +329,7 @@ void get_filetype(char *filename, char *filetype)
  *   - MIME 타입 확인 후 응답 헤더 전송
  *   - 파일 내용을 mmap으로 메모리에 매핑 후 클라이언트에 전송
  ************************************************/
-void serve_static(int fd, char *filename, int filesize)
+void serve_static(int fd, char *filename, int filesize, char *method)
 {
   int srcfd;                       // 디스크에서 파일을 읽기 위한 파일 디스크립터
   // char *srcp;                      // [as-is] mmap으로 메모리에 매핑된 파일 주소
@@ -374,21 +383,26 @@ void serve_static(int fd, char *filename, int filesize)
   // [신 버전] malloc + rio_readn 기반 전송
   // ============================================
 
-  // [4] 파일 열기 및 robust read 준비
+  // [4] HEAD 요청이면 본문 생략 ← [HW 11.11] HTTP HEAD 메소드 지원
+  if (strcasecmp(method, "HEAD") == 0) {
+    return;
+  }
+
+  // [5] 본문 전송 - 파일 열기 및 robust read 준비
   srcfd = Open(filename, O_RDONLY, 0);  // 읽기 전용으로 파일 열기
   Rio_readinitb(&rio, srcfd);           // Robust read를 위한 초기화 (파일 디스크립터에 대해 설정)
 
-  filebuf = (char *)Malloc(filesize);  // [5] 파일 전체 크기만큼 동적 메모리 버퍼를 할당
+  filebuf = (char *)Malloc(filesize);  // [6] 파일 전체 크기만큼 동적 메모리 버퍼를 할당
 
-  // [6] Robust read로 파일 전체 내용을 filebuf에 읽어오기
+  // [7] Robust read로 파일 전체 내용을 filebuf에 읽어오기
   if (Rio_readn(srcfd, filebuf, filesize) != filesize) {
-    fprintf(stderr, "Error: Could not read file %s completely\n, filename");
+    fprintf(stderr, "Error: Could not read file %s completely\n", filename);
     exit(1);
   }
   Close(srcfd); // 더 이상 파일 디스크립터는 필요 없으므로 닫기
 
-  Rio_writen(fd, filebuf, filesize);  // [7] 읽은 파일 내용을 클라이언트에게 전송
-  Free(filebuf);                      // [8] 메모리 해제
+  Rio_writen(fd, filebuf, filesize);  // [8] 읽은 파일 내용을 클라이언트에게 전송
+  Free(filebuf);                      // [9] 메모리 해제
 }
 
 
@@ -407,12 +421,11 @@ void serve_static(int fd, char *filename, int filesize)
  *   - HTTP 응답 헤더 전송
  *   - fork 후 자식 프로세스에서 CGI 프로그램 실행 (stdout을 소켓으로 redirect)
  ************************************************/
-void serve_dynamic(int fd, char *filename, char *cgiargs)
+void serve_dynamic(int fd, char *filename, char *cgiargs, char *method)
 {
   char buf[MAXLINE], *emptylist[] = {NULL};
   char *p = buf;
   int n, remaining = sizeof(buf);
-  pid_t pid;
 
   // [1] 응답 헤더 작성
   n = snprintf(p, remaining, "HTTP/1.0 200 OK\r\n");
