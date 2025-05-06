@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <pthread.h>
 #include "csapp.h"
 
 /* Recommended max cache and object sizes */
@@ -14,6 +15,7 @@ static const char *user_agent_hdr =
 /************************************************
  * 함수 선언부
  ************************************************/
+void *thread(void *vargp);
 void handle_client(int clientfd);
 void read_requesthdrs(rio_t *request_rio, const char *uri, char *host_line, char *other_hdrs);
 void parse_uri(const char *uri, char *hostname, char *port, char *path);
@@ -35,11 +37,11 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longms
  * 기능:
  *   - 지정한 포트 번호로 리스닝 소켓을 열고
  *   - 클라이언트 요청을 반복적으로 수락
- *   - 각 요청을 스레드로 처리
+ *   - 각 요청을 스레드로 처리 (병렬 처리)
  ************************************************/
 int main(int argc, char **argv)
 {
-    int listenfd, clientfd;                      // listenfd: 서버 리스닝 소켓, clientfd: 클라이언트 연결 소켓
+    int listenfd;                                // listenfd: 서버 리스닝 소켓
     char cl_hostname[MAXLINE], cl_port[MAXLINE]; // 클라이언트의 호스트 이름과 포트 번호를 저장할 버퍼
     socklen_t clientlen;                         // 클라이언트 주소 구조체의 크기
     struct sockaddr_storage clientaddr;          // 클라이언트의 주소 정보를 저장 (IPv4/IPv6 호환)
@@ -55,23 +57,48 @@ int main(int argc, char **argv)
 
     // [3] 무한 루프: 클라이언트의 요청을 반복적으로 수락하고 처리
     while (1) {
-        clientlen = sizeof(clientaddr); // clientaddr 구조체 크기 초기화
+        clientlen = sizeof(clientaddr);                 // clientaddr 구조체 크기 초기화
+        int *connfdp = malloc(sizeof(int));             // *thread()에 전달할 clientfd 동적 할당
 
-        // [3-1] 클라이언트 연결 수락 (수락되면 새 소켓 clientfd 반환)
-        clientfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
+        // [3-1] 클라이언트 연결 수락 → 새로 연결된 소켓 clientfd 획득
+        *connfdp = Accept(listenfd, (SA *)&clientaddr, &clientlen);
 
-        // [3-2] 클라이언트 주소 정보를 사람이 읽을 수 있는 문자열로 변환 (디버깅용)
+        // [3-2] 클라이언트 주소 정보를 사람이 읽을 수 있는 문자열로 변환 (로그용)
         Getnameinfo((SA *)&clientaddr, clientlen,
                     cl_hostname, MAXLINE,
                     cl_port, MAXLINE, 0);
         printf("Accepted connection from (%s, %s)\n", cl_hostname, cl_port);
 
-        // [3-3] 클라이언트 요청 처리 (프록시 역할 수행)
-        handle_client(clientfd);
-
-        // [3-4] 연결 종료
-        Close(clientfd);
+        // [3-3] 요청을 처리할 스레드 생성
+        pthread_t tid;
+        pthread_create(&tid, NULL, thread, connfdp);    // *thread()에 clientfd 전달
     }
+}
+
+
+/************************************************
+ * thread - 스레드로 실행되는 함수
+ *
+ * 인자:
+ *   vargp: 클라이언트 소켓 fd를 가리키는 포인터
+ *
+ * 반환:
+ *   없음 (void *)
+ *
+ * 기능:
+ *   - 스레드를 detach 상태로 설정 (리소스 누수 방지)
+ *   - clientfd 메모리 해제
+ *   - 클라이언트 요청 처리 후 소켓 닫기
+ ************************************************/
+void *thread(void *vargp) 
+{
+    int clientfd = *((int *)vargp);     // clientfd(클라이언트 연결 소켓 fd) 추출 
+    pthread_detach(pthread_self());     // detach 상태 설정 (join 불필요, 자동 회수)
+    free(vargp);                        // main에서 malloc한 clientfd 메모리 해제
+
+    handle_client(clientfd);            // 프록시 핵심 로직 수행
+    Close(clientfd);                    // 처리 후 소켓 닫기
+    return NULL;
 }
 
 
@@ -254,7 +281,7 @@ void parse_uri(const char *uri, char *hostname, char *port, char *path)
         } else {
             strcpy(hostname, host_start);  // path도 없음 → 전체가 hostname
         }
-        strcpy(port, "80"); // 기본 포트
+        strcpy(port, DEFAULT_PORT); // 기본 포트
     }
 }   
 
