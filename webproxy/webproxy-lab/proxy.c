@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 
         // [3-3] 요청을 처리할 스레드 생성
         pthread_t tid;
-        pthread_create(&tid, NULL, thread, connfdp);    // *thread()에 clientfd 전달
+        Pthread_create(&tid, NULL, thread, connfdp);    // *thread()에 clientfd 전달
     }
 }
 
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
 void *thread(void *vargp) 
 {
     int clientfd = *((int *)vargp);     // clientfd(클라이언트 연결 소켓 fd) 추출 
-    pthread_detach(pthread_self());     // detach 상태 설정 (join 불필요, 자동 회수)
+    Pthread_detach(pthread_self());     // detach 상태 설정 (join 불필요, 자동 회수)
     free(vargp);                        // main에서 malloc한 clientfd 메모리 해제
 
     handle_client(clientfd);            // 프록시 핵심 로직 수행
