@@ -4,7 +4,7 @@ Kernel command line: -q -mlfqs run mlfqs-load-avg
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
-Calibrating timer...  18,816,000 loops/s.
+Calibrating timer...  13,094,400 loops/s.
 Boot complete.
 Executing 'mlfqs-load-avg':
 (mlfqs-load-avg) begin
@@ -102,8 +102,8 @@ Executing 'mlfqs-load-avg':
 (mlfqs-load-avg) After 178 seconds, load average=0.00.
 (mlfqs-load-avg) end
 Execution of 'mlfqs-load-avg' complete.
-Timer: 18857 ticks
-Thread: 6626 idle ticks, 12233 kernel ticks, 0 user ticks
+Timer: 18868 ticks
+Thread: 6337 idle ticks, 12535 kernel ticks, 0 user ticks
 Console: 5432 characters output
 Keyboard: 0 keys pressed
 Powering off...

@@ -4,21 +4,19 @@ Kernel command line: -q run priority-donate-sema
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
-Calibrating timer...  14,720,000 loops/s.
+Calibrating timer...  16,153,600 loops/s.
 Boot complete.
 Executing 'priority-donate-sema':
 (priority-donate-sema) begin
+(priority-donate-sema) Thread L acquired lock.
 (priority-donate-sema) Main thread finished.
 (priority-donate-sema) end
-Execution of 'priority-donate-sema' complete.
-Timer: 49 ticks
-(priority-donate-sema) Thread L acquired lock.
 (priority-donate-sema) Thread L downed semaphore.
 Kernel PANIC at ../../threads/synch.c:223 in lock_release(): assertion `lock_held_by_current_thread (lock)' failed.
-Call stack: 0x80042133eb 0x8004209f73 0x8004218702 0x80042073bf.
+Call stack: 0x800421352f 0x800420a0da 0x8004218846 0x8004207526.
 The `backtrace' program can make call stacks useful.
 Read "Backtraces" in the "Debugging Tools" chapter
 of the Pintos documentation for more information.
-Timer: 60 ticks
-Thread: 0 idle ticks, 60 kernel ticks, 0 user ticks
+Timer: 89 ticks
+Thread: 0 idle ticks, 89 kernel ticks, 0 user ticks
 Console: 

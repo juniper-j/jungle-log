@@ -132,15 +132,22 @@ timer_elapsed (int64_t then) {
 void
 timer_sleep (int64_t ticks) 
 {
-	int64_t start = timer_ticks(); 			// 현재 시점을 저장해 sleep 기준으로 사용
-	ASSERT (intr_get_level () == INTR_ON); 	// 타이머 인터럽트를 위해 인터럽트 활성 상태 요구
+	if (ticks <= 0) return;
+
+	int64_t wakeup_tick = timer_ticks() + ticks;
+	thread_sleep(wakeup_tick);  // ✅ 절대값 기반으로 정확한 sleep 리스트 추가
+	
+
+	// ❌ 문제 있었던 이전 코드 (AS-IS)
+	// int64_t start = timer_ticks();  // 현재 tick 저장
+	// ASSERT (intr_get_level () == INTR_ON);  // 인터럽트 활성화 상태인지 검사
 
 	// if (timer_elapsed(start) < ticks)
-	thread_sleep(start + ticks); 		// 현재 시점에서 ticks 만큼 sleep (ticks가 0보다 클 때만 sleep)
+	// 	thread_sleep(start + ticks);  // 호출 타이밍에 따라 무시될 수 있음
 
-	/* AS-IS: 기존 busy-wait 방식 (비효율적)
+	/* ❌ 비효율적인 busy-wait 방식 (AS-IS)
 	while (timer_elapsed(start) < ticks)
-		thread_yield(); // RUNNING 상태 유지하며 CPU를 낭비함 */
+		thread_yield();  // sleep_list에 등록되지 않으므로 깨어날 수 없음 */
 }
 
 /* Suspends execution for approximately MS milliseconds. */
@@ -198,11 +205,11 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
 	ticks++;						// 전체 시스템 tick 수 증가
 	thread_tick ();					// 현재 running 중인 thread의 tick 처리 및 time slice 만료 검사
-	// if (closest_tick <= ticks)  	// 가장 이른 wakeup_tick(closest_tick)이 현재 tick보다 작거나 같다면
-	thread_awake(ticks);			// → 깨어날 시간이 도래한 스레드가 존재할 수 있으므로 thread_awake() 호출
+	if (closest_tick() <= ticks)  	// 가장 이른 wakeup_tick(closest_tick)이 현재 tick보다 작거나 같다면
+		thread_awake(ticks);		// → 깨어날 시간이 도래한 스레드가 존재할 수 있으므로 thread_awake() 호출
 }
 
-/* Returns true if LOOPS iterations waits for more than one timer
+/* Returns true if LOOPS iterations waits for morcde than one timer
    tick, otherwise false. */
 static bool
 too_many_loops (unsigned loops) {
