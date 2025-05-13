@@ -1,4 +1,4 @@
-# 📘 Docker + VSCode DevContainer 기반 C 개발 환경 구축 가이드 (RBTree)
+# 📘 Docker + VSCode DevContainer 기반 C 개발 환경 구축 가이드
 
 이 문서는 **Windows**와 **macOS** 사용자가 Docker와 VSCode DevContainer 기능을 활용하여 C 개발 및 디버깅 환경을 빠르게 구축할 수 있도록 도와줍니다.
 
@@ -50,7 +50,7 @@ Docker는 다음 구성요소로 이루어져 있습니다:
 터미널(CMD, PowerShell, zsh 등)에서 아래 명령어로 프로젝트 폴더만 내려받습니다:
 
 ```bash
-git clone --depth=1 https://github.com/krafton-jungle/rbtree_lab_docker.git
+git clone --depth=1 https://github.com/krafton-jungle/data_structures_docker.git
 ```
 
 - `--depth=1` 옵션은 git commit 히스토리를 생략하고 **최신 파일만 가져옵니다.**
@@ -58,7 +58,7 @@ git clone --depth=1 https://github.com/krafton-jungle/rbtree_lab_docker.git
 ### 📂 다운로드 후 폴더 구조 설명
 
 ```
-rbtree_lab_docker/
+data_structures_docker/
 ├── .devcontainer/
 │   ├── devcontainer.json      # VSCode에서 컨테이너 환경 설정
 │   └── Dockerfile             # C 개발 환경 이미지 정의
@@ -67,25 +67,31 @@ rbtree_lab_docker/
 │   ├── launch.json            # 디버깅 설정 (F5 실행용)
 │   └── tasks.json             # 컴파일 자동화 설정
 │
-├── rbtree_lab
-│   ├── src/                    # 소스 폴더
-│   ├── test/                   # test 폴더
-│   ├── Makefile                # 과제를 컴파일하고 테스트하기 위한 파일
-│   └── README.md               # rbtree 과제 설명
+├── Data-Structures/
+│   ├── Binary_Search_Tree/
+│   ├── Binary_Tree/
+│   ├── Linked_List/
+│   │   ├── Q1_A_LL.c ~ Q7_A_LL.c       # 연결 리스트 문제 C 코드
+│   │   └── Linked Lists Questions.pdf # 문제 설명 문서
+│   └── Stack_and_Queue/
+│       ├── Q1_C_SQ.c ~ Q7_C_SQ.c       # 스택/큐 문제 C 코드
+│       └── Stack and Queues Questions.pdf # 문제 설명 문서
 │
 └── README.md  # 설치 및 사용법 설명 문서
 ```
+
+> ✅ 각 디렉터리는 자료구조 주제별로 문제 파일들이 정리되어 있습니다.
 
 ---
 
 ## 5. VSCode에서 해당 프로젝트 폴더 열기
 
 1. VSCode를 실행
-2. `파일 → 폴더 열기`로 방금 클론한 `rbtree_lab_docker` 폴더를 선택
-
+2. `파일 → 폴더 열기`로 방금 클론한 `data_structures_docker` 폴더를 선택
 ---
 
 ## 6. 개발 컨테이너: 컨테이너에서 열기
+
 
 1. VSCode에서 `Ctrl+Shift+P` (Windows/Linux) 또는 `Cmd+Shift+P` (macOS)를 누릅니다.
 2. 명령어 팔레트에서 `Dev Containers: Reopen in Container`를 선택합니다.
@@ -94,13 +100,14 @@ rbtree_lab_docker/
 ---
 
 ## 7. C 파일에 브레이크포인트 설정 후 디버깅 (F5)
+이제 본격적으로 문제를 풀 시간입니다. `README.md` 파일을 참조하셔서 Linked List -> Stack and Queue -> Binary Tree -> Binary Search Tree 순으로 문제를 풀어보세요. 각 문제 폴더에는 pdf형태로 문제 설명이 있습니다.
 
-이제 본격적으로 문제를 풀 시간입니다. `rbtree_lab/README.md` 파일을 참조하셔서 rbtree 문제를 풀어보세요.
-
-C 언어로 문제를 풀다가 디버깅이 필요하시면 소스코드에 BreakPoint를 설정한 뒤에 키보드에서 `F5`를 눌러 디버깅을 시작할 수 있습니다.`F5`를 누르면 `rbtree_lab`폴더에서 `make test` 를 실행하여 테스트 코드를 디버깅 모드로 실행합니다.
-- 참고로 변수, 메모리, 스택, 출력 등을 VSCode에서 확인할 수도 있습니다.
+C 언어로 문제를 풀다가 디버깅이 필요하시면 소스코드에 BreakPoint를 설정한 뒤에 키보드에서 `F5`를 눌러 디버깅을 시작할 수 있습니다.   
+* 참고로 변수, 메모리, 스택, 출력 등을 VSCode에서 확인할 수도 있습니다.
 
 ---
+
+
 
 ## 8. 새로운 Git 리포지토리에 Commit & Push 하기
 
@@ -119,7 +126,7 @@ git commit -m "Clean start"
 git push -u origin main
 ```
 
-### 📌 설명
+### 📌 설명:
 
 - `rm -rf .git`: 기존 Git 기록과 연결을 완전히 삭제합니다.
 - `git init`: 현재 폴더를 새로운 Git 리포지토리로 초기화합니다.
@@ -136,5 +143,4 @@ git push -u origin main
 - (주의) 위 내용은 처음 설치하는 사람을 기준으로 작성된 내용입니다. Data-Structures 폴더에서 있는 프로젝트를 반복적으로 개발할 경우 5에서 7장의 내용만 반복하시면 됩니다.
 - 어떤 운영체제에서든 동일한 환경으로 개발 가능  
 - VSCode 내에서 코드 작성, 컴파일, 디버깅까지 한 번에 가능
-
 ---

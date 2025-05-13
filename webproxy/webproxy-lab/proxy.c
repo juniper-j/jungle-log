@@ -89,7 +89,7 @@ int main(int argc, char **argv)
  *   - 스레드를 detach 상태로 설정 (리소스 누수 방지)
  *   - clientfd 메모리 해제
  *   - 클라이언트 요청 처리 후 소켓 닫기
- ************************************************/
+ ************************************************/`
 void *thread(void *vargp) 
 {
     int clientfd = *((int *)vargp);     // clientfd(클라이언트 연결 소켓 fd) 추출 
