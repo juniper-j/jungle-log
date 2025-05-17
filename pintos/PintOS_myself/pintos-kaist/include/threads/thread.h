@@ -92,9 +92,14 @@ struct thread {
 	char name[16];                      /* Name (for debugging purposes). */
 	int priority;                       /* Priority. */
 	int64_t wakeup_ticks;				// 일어날 시각 추가
+	
+	struct list donations;              /* 우선순위 donations를 추적하기 위한 리스트 */
+	struct lock *wait_on_lock;          /* 대기 중인 락 */
+	int base_priority;                  /* 기부 이전 우선순위 */
 
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
+	struct list_elem d_elem;            /* Donations List element. */
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
@@ -108,6 +113,9 @@ struct thread {
 	/* Owned by thread.c. */
 	struct intr_frame tf;               /* Information for switching */
 	unsigned magic;                     /* Detects stack overflow. */
+
+	int64_t wakeup_tick;                /* 깨어나기까지 남은 시간 -> 이거 왜 해줘야 하지? */
+
 };
 
 /* If false (default), use round-robin scheduler.
@@ -117,7 +125,6 @@ extern bool thread_mlfqs;
 
 /* THREADS #1. Alarm Clock */
 void thread_sleep (int64_t ticks);
-bool cmp_thread_ticks (const struct list_elem *a, const struct list_elem *b, void *aux);
 void thread_awake (int64_t global_ticks);
 void update_closest_tick (int64_t ticks);
 int64_t closest_tick (void);
@@ -151,5 +158,12 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 void do_iret (struct intr_frame *tf);
+
+/* 스레드 우선순위 비교 함수 (내림차순 정렬, tie-breaker 포함) */
+bool cmp_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
+
+void preempt_priority(void);
+
+bool cmp_sema_priority(const struct list_elem *a, const struct list_elem *b, void *aux);
 
 #endif /* threads/thread.h */

@@ -77,7 +77,7 @@ static tid_t allocate_tid (void);
 /* ------------------ Ready/Sleep Queue Compare Functions ------------------ */
 bool cmp_priority (const struct list_elem *a, const struct list_elem *b, void *aux);
 static bool cmp_wakeup_tick (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
-static void preempt_priority(void);
+void preempt_priority(void);
 
 /* ------------------ Debug Utilities ------------------ */
 // static void debug_print_thread_lists (void);    // 디버깅용 리스트 출력 함수
@@ -116,7 +116,6 @@ thread_init (void) {
 	list_init (&ready_list);                 // 준비 상태 스레드 리스트 초기화
 	list_init (&sleep_list);                 // ⏰ sleep 상태 스레드 리스트 초기화
 	list_init (&wait_list);					 // ❓
-	// list_init (&all_list);                // (사용하지 않음) 전체 스레드 리스트
 	list_init (&destruction_req);            // 제거 요청 대기 스레드 리스트 초기화
 
 	/* Set up a thread structure for the running thread. */
@@ -423,14 +422,10 @@ thread_unblock (struct thread *t)
 void
 preempt_priority(void) 
 {
-    if (!intr_context() && !list_empty(&ready_list)) {	// 인터럽트 핸들러 안에서 실행 중이 아니고, 리스트가 비어있지 않은 경우에만 선점 검사 수행
-        struct thread *cur = thread_current();			// 현재 실행 중인 스레드의 포인터를 가져옴
-        struct thread *front = list_entry(list_front(&ready_list), struct thread, elem);	// 리스트의 맨 앞(우선순위 높은) 스레드를 가져옴
-
-		// printf("[PREEMPT] Current: %s (%d), Front: %s (%d)\n", cur->name, cur->priority, front->name, front->priority);
-        if (cur->priority < front->priority) {			// 만약 현재 스레드보다 더 높은 우선순위의 스레드가 리스트에 있다면
-            // printf("[PREEMPT] Current: %s (%d), Front: %s (%d)\n", cur->name, cur->priority, front->name, front->priority);~
-			thread_yield();								// 현재 스레드는 자발적으로 CPU를 양보하여 스케줄러가 다른 스레드를 실행하게 함
+    if (!intr_context() && !list_empty(&ready_list))
+	{
+        if (thread_current()->priority < list_entry(list_front(&ready_list), struct thread, elem)->priority) {			
+			thread_yield();						
         }
     }
 }
@@ -653,7 +648,13 @@ kernel_thread (thread_func *function, void *aux) {
 
 
 /* Does basic initialization of T as a blocked thread named
-   NAME. */
+   NAME. 
+   
+   ✅ TODO: priority donation을 위해 필요한 필드 초기화
+     1. donations 리스트 초기화 - 우선순위 기부 내역을 관리하기 위한 리스트
+     2. wait_on_lock 초기화 - 대기 중인 락의 주소를 추적하기 위한 포인터
+     3. base_priority 초기화 - 원래 우선순위를 저장하는 멤버 변수
+   */
 static void
 init_thread (struct thread *t, const char *name, int priority) {
 	ASSERT (t != NULL);
@@ -666,6 +667,12 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
 	t->magic = THREAD_MAGIC;
+
+	// TODO SOL.
+	t->wait_on_lock = NULL;
+	t->base_priority = NULL;
+	list_init(&t->donations);
+	
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
@@ -784,15 +791,15 @@ thread_launch (struct thread *th) {
  * It's not safe to call printf() in the schedule(). */
 static void
 do_schedule(int status) {
-	ASSERT (intr_get_level () == INTR_OFF);
-	ASSERT (thread_current()->status == THREAD_RUNNING);
-	while (!list_empty (&destruction_req)) {
-		struct thread *victim =
-			list_entry (list_pop_front (&destruction_req), struct thread, elem);
-		palloc_free_page(victim);
+	ASSERT (intr_get_level () == INTR_OFF); // 인터럽트 OFF 상태인지 확인
+	ASSERT (thread_current()->status == THREAD_RUNNING); // 현재 스레드가 실행중인지 확인
+	while (!list_empty (&destruction_req)) { 
+		struct thread *victim = // 교체될 스레드
+			list_entry (list_pop_front (&destruction_req), struct thread, elem); 
+		palloc_free_page(victim); // 교체될 스레드 메모리 해제
 	}
-	thread_current ()->status = status;
-	schedule ();
+	thread_current ()->status = status; 
+	schedule (); // 문맥 전환
 }
 
 /*************************************************************
@@ -850,24 +857,3 @@ allocate_tid (void)
 
 	return tid;
 }
-
-
-// /* ------------------ 디버깅용 리스트 출력 함수 ------------------ */
-// static void
-// debug_print_thread_lists(void) {
-//   struct list_elem *e;
-
-//   // printf("[LIST] ready_list: ");
-//   for (e = list_begin(&ready_list); e != list_end(&ready_list); e = list_next(e)) {
-//     struct thread *t = list_entry(e, struct thread, elem);
-//     printf("(%s, pri=%d) ", t->name, t->priority);
-//   }
-//   printf("\n");
-
-//   // printf("[LIST] sleep_list: ");
-//   for (e = list_begin(&sleep_list); e != list_end(&sleep_list); e = list_next(e)) {
-//     struct thread *t = list_entry(e, struct thread, elem);
-//     printf("(%s, wakeup=%lld) ", t->name, t->wakeup_ticks);
-//   }
-//   printf("\n");
-// }

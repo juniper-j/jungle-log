@@ -36,7 +36,7 @@ filesys_init (bool format) {
 
 	if (format)
 		do_format ();
-
+~
 	free_map_open ();
 #endif
 }
