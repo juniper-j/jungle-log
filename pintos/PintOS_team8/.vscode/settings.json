@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "synch.h": "c",
+        "stdbool.h": "c",
+        "thread.h": "c",
+        "*.inc": "c",
+        "random.h": "c",
+        "process.h": "c",
+        "pte.h": "c",
+        "mmu.h": "c",
+        "vaddr.h": "c",
+        "algorithm": "c"
+    }
+}
