@@ -279,14 +279,6 @@ lock_release (struct lock *lock) {
    struct thread *curr = thread_current();
    lock->holder = NULL;
    
-   // struct list_elem *e;
-   // for (e = list_begin (&curr->donations); e != list_end (&curr->donations); e = list_next(e))
-   // {
-   //    struct thread *donaItem = list_entry (list_front (&curr->donations), struct thread, d_elem); // ❌ 매 반복마다 donations 리스트의 첫 요소만 가져옴
-   //    if(donaItem->wait_on_lock == lock)
-   //       list_remove(e);   // ❌ e를 파괴한 뒤 list_next(e)는 죽은 포인터를 참조하거나 e != list_end() 체크에서 세그폴트 날 수 있음 -> remove 전에 next를 저장해야 함
-   // }
-   // 최소 수정 버전은...
    struct list_elem *e;
    for (e = list_begin(&curr->donations); e != list_end(&curr->donations);) {
       struct thread *donaItem = list_entry(e, struct thread, d_elem);
@@ -299,7 +291,6 @@ lock_release (struct lock *lock) {
    recal_priority(curr);
    sema_up (&lock->semaphore);
    //thread_yield();
-
 }
 
 /* Returns true if the current thread holds LOCK, false

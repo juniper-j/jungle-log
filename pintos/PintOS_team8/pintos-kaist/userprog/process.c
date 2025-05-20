@@ -247,7 +247,7 @@ error:
  * - 성공 시: 반환하지 않음 (유저 모드로 전환)
  * - 실패 시: -1 반환
  *
- * 특징:
+ * 특징:`
  * - 기존 스레드의 실행 컨텍스트를 완전히 교체함
  * - 성공 시 이 함수는 절대 반환하지 않으며, 유저 프로그램이 main부터 실행됨
  * - argument_stack 호출 이후 스택 포인터(rsp)를 기반으로 레지스터 세팅 필요
@@ -301,11 +301,6 @@ process_exec (void *f_name)
 	   이 과정을 통해 유저 프로그램 실행 준비를 마친다. */
 	success = load (file_name, &_if);
 
-	/* 로딩 실패 시 할당된 페이지 해제 후 -1 반환 */
-	palloc_free_page (file_name);
-	if (!success)
-		return -1;
-
 	/* ------------------ [4단계: 사용자 스택 세팅] ------------------ */
 	/* argument_stack 함수는 다음을 유저 스택에 쌓음:
 	   [1] 인자 문자열들 (문자 배열)
@@ -313,18 +308,22 @@ process_exec (void *f_name)
 	   [3] argc 값
 	   [4] 가짜 리턴 주소 (보통 0)
 	   위 내용을 모두 rsp 아래쪽부터 순서대로 쌓고, rsp를 새로운 위치로 갱신 */
-
 	argument_stack(arg_parsed, count, &_if.rsp);
 
 	/* 유저 프로그램이 main(argc, argv) 형태로 실행될 수 있도록
-	   레지스터 값을 세팅 (x86-64 리눅스 호출 규약 기준) */
+		레지스터 값을 세팅 (x86-64 리눅스 호출 규약 기준) */
 	_if.R.rdi = count;						// 첫 번째 인자: argc
 	_if.R.rsi = (char *)_if.rsp + 8;		// 두 번째 인자: argv 배열의 시작 주소
 
 	/* ------------------ [5단계: 스택 구조 디버깅용 출력] ------------------ */
 	/* 스택 상의 내용(문자열, 포인터, argc 등)을 16진수로 출력
-	   argument_stack이 올바르게 구성됐는지 확인하는 데 유용 */
+		argument_stack이 올바르게 구성됐는지 확인하는 데 유용 */
 	hex_dump(_if.rsp, _if.rsp, USER_STACK - (uint64_t)_if.rsp, true);
+
+	/* 로딩 실패 시 할당된 페이지 해제 후 -1 반환 */
+	palloc_free_page (file_name);
+	if (!success)
+		return -1;
 
 	/* ------------------ [6단계: 사용자 모드로 전환] ------------------ */
 	/* 준비한 인터럽트 프레임을 기반으로 유저 모드로 진입
@@ -338,42 +337,40 @@ void
 argument_stack (char **argv, int argc, void **rsp)
 {	/* arg_parsed: 프로그램 이름과 인자가 담긴 배열
 	   count: 인자의 개수
-	   rsp: 스택 포인터를 가리키는 주소 값 */ 			// RDI: 4 | RSI: 0x4747ffc0
+	   rsp: 스택 포인터를 가리키는 주소 값 */
 
 	/* ------------------ [1단계: 프로그램 이름(Name), 인자 문자열(Data) push] ------------------ */
-    for (int i = argc - 1; i >= 0; i--) {
-		int argv_len = strlen(argv[i]);
-		
-        for (int j = argv_len; j >= 0; j--) {
-            (*rsp)--;								// 스택 주소 감소
-            **(char **)rsp = argv[i][j];		// 주소에 문자 저장
+    for (int i = argc - 1; i >= 0; i--) {		// 인자를 뒤에서부터 push
+		int argv_len = strlen(argv[i]);			// 현재 인자의 문자열 길이 저장
+
+        for (int j = argv_len; j >= 0; j--) {	// '\0' 포함해 역순으로 문자 push
+            (*rsp)--;							// 스택 포인터 1바이트 감소
+            **(char **)rsp = argv[i][j];		// 해당 주소에 문자 저장
         }
-        argv[i] = *(char **)rsp;	// parse[i]에 현재 rsp의 값 저장해둠(지금 저장한 인자가 시작하는 주소값)
+        argv[i] = *(char **)rsp;	// rsp가 가리키는 주소를 argv[i]에 저장 (나중에 주소 배열 push 시 사용)
     }
 
     /* ------------------ [2단계: 패딩 정렬 push] ------------------ */
-    int padding = (int)*rsp % 8;
-    for (int i = 0; i < padding; i++)
-    {
-        (*rsp)--;
-        **(uint8_t **)rsp = 0; // rsp 직전까지 값 채움
+    int padding = (int)*rsp % 8;				// 8바이트 정렬을 위해 필요한 패딩 계산
+    for (int i = 0; i < padding; i++) {			
+        (*rsp)--;								// 1바이트 씩 스택 감소
+        **(uint8_t **)rsp = 0; 					// 해당 위치에 0 저장 (패딩용)
     }
 
 	/* ------------------ [3단계: 인자 문자열 종료를 나타내는 0 push] ------------------ */
-    (*rsp) -= 8;
-    **(char ***)rsp = 0; // char* 타입의 0 추가
+    (*rsp) -= 8;								// 8바이트 공간 확보
+    **(char ***)rsp = 0; 						// 마지막 argv 뒤에 NULL 포인터 추가
 
 
 	/* ------------------ [4단계: 각 인자 문자열의 주소 push] ------------------ */
-    for (int i = argc - 1; i > -1; i--)
-    {
-        (*rsp) -= 8; // 다음 주소로 이동
-        **(char ***)rsp = argv[i]; // char* 타입의 주소 추가
+    for (int i = argc - 1; i > -1; i--) {
+        (*rsp) -= 8; 							// 8바이트 공간 확보
+        **(char ***)rsp = argv[i]; 				// 저장해뒀던 각 인자의 시작 주소를 push
     }
 
 	/* ------------------ [5단계: return address push] ------------------ */
-    (*rsp) -= 8;
-    **(void ***)rsp = 0; // void* 타입의 0 추가
+    (*rsp) -= 8;								// 8바이트 공간 확보
+    **(void ***)rsp = 0;						// 리턴 주소 dummy (실행 종료 시 사용)
 }
 
 /* Waits for thread TID to die and returns its exit status.  If

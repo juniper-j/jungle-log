@@ -23,7 +23,7 @@ void syscall_handler (struct intr_frame *);
  * Specific Register (MSR). For the details, see the manual. */
 
 
-/* === [1] MSR 레지스터 초기화: syscall 진입점 설정 === lol */ 
+/* === [1] MSR 레지스터 초기화: syscall 진입점 설정 === */ 
 #define MSR_STAR 0xc0000081         /* Segment selector msr */
 #define MSR_LSTAR 0xc0000082        /* Long mode SYSCALL target */
 #define MSR_SYSCALL_MASK 0xc0000084 /* Mask for the eflags */
@@ -46,7 +46,7 @@ syscall_init (void) {
 void
 syscall_handler (struct intr_frame *f) {
 	// TODO: Your implementation goes here.
-	printf("syscall handler has called. \n");
+	//printf("syscall handler has called. \n");
 
 	switch(f->R.rax) {
 	case SYS_HALT:
@@ -86,7 +86,6 @@ syscall_handler (struct intr_frame *f) {
 		write(f->R.rdi, (void *)f->R.rsi, f->R.rdx);
 		break;
 	case SYS_WRITE:
-		printf("write has called!\n\n");
 		write(f->R.rdi, f->R.rsi, f->R.rdx);
 		break;
 	case SYS_SEEK:
@@ -113,7 +112,8 @@ void halt(void)
 }
 
 void exit(int status) {
-	printf("Exiting with status: %d\n", status);
+	struct thread *current = thread_current();
+	printf("%s: %d\n", current->name, status);
 	thread_exit();
 }
 
@@ -181,15 +181,16 @@ int read(int fd, void *buffer, unsigned size) {
 }
 
 int write(int fd, const void *buffer, unsigned size) {
+
 	// ✅ 유저 포인터 유효성 검사
 	// for (unsigned i = 0; i < size; i++) {
 	// 	check_address((const uint8_t *)buffer + i);
 	// }
 
-	// if (fd == 1) {
-	// 	putbuf(buffer, size);
-	// 	return size;
-	// }
+	if (fd == 1) {
+		putbuf(buffer, size);
+		return size;
+	}
 
 	// struct file *file = get_file_from_fd(fd);
 	// if (file == NULL)
