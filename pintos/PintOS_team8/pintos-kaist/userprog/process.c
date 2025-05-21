@@ -333,6 +333,25 @@ process_exec (void *f_name)
 	NOT_REACHED ();							// do_iret는 반환하지 않으므로, 이 코드는 도달하지 않음
 }
 
+/***************************************************************
+ * argument_stack - 사용자 프로그램의 인자들을 스택에 쌓아 main(argc, argv) 형태로 전달
+ *
+ * 기능:
+ * - 인자 문자열들을 스택에 복사
+ * - 8바이트 정렬 패딩을 추가
+ * - 각 문자열의 주소(argv[i])와 NULL(argv[argc])를 역순으로 저장
+ * - 가짜 return address도 스택에 추가
+ * 
+ * 매개변수:
+ * - argv: 파싱된 인자 문자열 배열 (예: ["echo", "foo", "bar"])
+ * - argc: 인자의 개수
+ * - rsp: 사용자 스택 포인터의 주소 (이 값을 아래로 내리며 스택 구성)
+ *
+ * 주의사항:
+ * - rsp는 PHYS_BASE에서 시작하여 점진적으로 감소해야 하며,
+ *   유저 가상 주소 공간을 벗어나지 않도록 주의해야 합니다.
+ * - 결과적으로 rsp는 main(argc, argv) 호출을 위한 완성된 스택을 가리킵니다.
+ ***************************************************************/
 void 
 argument_stack (char **argv, int argc, void **rsp)
 {	/* arg_parsed: 프로그램 이름과 인자가 담긴 배열
@@ -372,6 +391,19 @@ argument_stack (char **argv, int argc, void **rsp)
     (*rsp) -= 8;								// 8바이트 공간 확보
     **(void ***)rsp = 0;						// 리턴 주소 dummy (실행 종료 시 사용)
 }
+
+void
+argument_stack (char **argv, int argc, struct intr_frame *if_)
+{
+	int stack_shift;		// 포인터를 이동시킬 단위
+	int stack_ptr;			// 포인터
+	
+	/* ------------------ [1단계: 프로그램 이름(Name), 인자 문자열(Data) push] ------------------ */
+
+	
+}
+
+
 
 /* Waits for thread TID to die and returns its exit status.  If
  * it was terminated by the kernel (i.e. killed due to an

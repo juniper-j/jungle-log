@@ -117,16 +117,15 @@ thread_init (void) {
 		.size = sizeof (gdt) - 1,            // GDT 크기 설정
 		.address = (uint64_t) gdt            // GDT 주소 설정
 	};
-	lgdt (&gdt_ds);                           // GDT 레지스터에 설정값 로드
+	lgdt (&gdt_ds);                          // GDT 레지스터에 설정값 로드
 
 	/* Init the global thread context */
 	lock_init (&tid_lock);                   // TID 할당을 위한 락 초기화
 	list_init (&ready_list);                 // 준비 상태 스레드 리스트 초기화
-	list_init (&sleep_list);                 // ⏰ sleep 상태 스레드 리스트 초기화
-	list_init (&wait_list);					 // ❓
+	list_init (&sleep_list);                 // sleep 상태 스레드 리스트 초기화
+	list_init (&wait_list);					 // lock 대기 리스트
 	list_init (&destruction_req);            // 제거 요청 대기 스레드 리스트 초기화
 	
-
 	/* Set up a thread structure for the running thread. */
 	initial_thread = running_thread ();      // 현재 실행 중인 스레드를 thread 구조체로 변환
 	init_thread (initial_thread, "main", PRI_DEFAULT);  // 초기 스레드 이름과 우선순위 설정

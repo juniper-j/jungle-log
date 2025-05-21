@@ -81,7 +81,7 @@ main (void)
 
 	/* STEP 3: 커널 스레드 시스템 및 콘솔 초기화 */
 	thread_init ();					// 현재 실행 중인 커널 스택을 main thread로 인식하고 스레드 시스템 자료구조 초기화
-	console_init ();				// 콘솔 락 초기화 (printf, putchar 등 동기화 목적)
+	console_init ();				// 콘솔 락 초기화 (printf, putchar 등 콘솔 출력을 락 기반으로 동기화하도록 설정)
 
 	/* STEP 4: 메모리 시스템 초기화 */
 	mem_end = palloc_init ();		// 물리 메모리 페이지 할당자 초기화 (페이지 풀 구성)

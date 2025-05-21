@@ -4,20 +4,20 @@
 /* System call numbers. */
 enum {
 	/* Projects 2 and later. */
-	SYS_HALT,                   /* Halt the operating system. */
-	SYS_EXIT,                   /* Terminate this process. */
-	SYS_FORK,                   /* Clone current process. */
-	SYS_EXEC,                   /* Switch current process. */
-	SYS_WAIT,                   /* Wait for a child process to die. */
-	SYS_CREATE,                 /* Create a file. */
-	SYS_REMOVE,                 /* Delete a file. */
-	SYS_OPEN,                   /* Open a file. */
-	SYS_FILESIZE,               /* Obtain a file's size. */
-	SYS_READ,                   /* Read from a file. */
-	SYS_WRITE,                  /* Write to a file. */
-	SYS_SEEK,                   /* Change position in a file. */
-	SYS_TELL,                   /* Report current position in a file. */
-	SYS_CLOSE,                  /* Close a file. */
+	SYS_HALT,                   /* Halt the operating system. == 0 */
+	SYS_EXIT,                   /* Terminate this process. == 1 */
+	SYS_FORK,                   /* Clone current process. == 2 */
+	SYS_EXEC,                   /* Switch current process. == 3 */
+	SYS_WAIT,                   /* Wait for a child process to die. == 4 */
+	SYS_CREATE,                 /* Create a file. == 5 */
+	SYS_REMOVE,                 /* Delete a file. == 6 */
+	SYS_OPEN,                   /* Open a file. == 7 */
+	SYS_FILESIZE,               /* Obtain a file's size. == 8 */
+	SYS_READ,                   /* Read from a file. == 9 */
+	SYS_WRITE,                  /* Write to a file. == 10 */
+	SYS_SEEK,                   /* Change position in a file. == 11 */
+	SYS_TELL,                   /* Report current position in a file. == 12 */
+	SYS_CLOSE,                  /* Close a file. == 13 */
 
 	/* Project 3 and optionally project 4. */
 	SYS_MMAP,                   /* Map a file into memory. */
