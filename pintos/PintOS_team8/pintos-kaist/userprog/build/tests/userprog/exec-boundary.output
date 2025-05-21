@@ -28,8 +28,8 @@ exit has called!
 
 exec-boundary: 1
 Execution of 'exec-boundary' complete.
-Timer: 592 ticks
-Thread: 59 idle ticks, 500 kernel ticks, 34 user ticks
+Timer: 605 ticks
+Thread: 60 idle ticks, 514 kernel ticks, 32 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 107 reads, 452 writes
 hd1:0: 207 reads, 0 writes

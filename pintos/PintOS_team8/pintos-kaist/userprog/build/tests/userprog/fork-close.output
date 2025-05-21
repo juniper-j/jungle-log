@@ -31,8 +31,8 @@ exit has called!
 
 fork-close: 1
 Execution of 'fork-close' complete.
-Timer: 572 ticks
-Thread: 49 idle ticks, 488 kernel ticks, 36 user ticks
+Timer: 605 ticks
+Thread: 50 idle ticks, 519 kernel ticks, 37 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 117 reads, 258 writes
 hd1:0: 110 reads, 0 writes

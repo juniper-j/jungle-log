@@ -26,8 +26,8 @@ exit has called!
 
 fork-once: 0
 Execution of 'fork-once' complete.
-Timer: 567 ticks
-Thread: 49 idle ticks, 489 kernel ticks, 30 user ticks
+Timer: 590 ticks
+Thread: 42 idle ticks, 520 kernel ticks, 30 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 234 writes
 hd1:0: 103 reads, 0 writes

@@ -20,7 +20,8 @@ enum thread_status {
 
 /* Thread identifier type.
    You can redefine this to whatever type you like. */
-typedef int tid_t;
+typedef int tid_t;						/* 커널 스레드 ID (Pintos 전반에서 사용됨) */
+typedef tid_t pid_t;					/* 유저 프로세스 ID (논리적으로 tid_t와 같지만 API 분리를 위해 사용) */
 #define TID_ERROR ((tid_t) -1)          /* Error value for tid_t. */
 
 /* Thread priorities. */

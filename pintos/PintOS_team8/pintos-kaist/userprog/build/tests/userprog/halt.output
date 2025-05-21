@@ -17,8 +17,8 @@ Executing 'halt':
 (halt) begin
 half has called!
 
-Timer: 303 ticks
-Thread: 42 idle ticks, 244 kernel ticks, 19 user ticks
+Timer: 308 ticks
+Thread: 47 idle ticks, 244 kernel ticks, 18 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 232 writes
 hd1:0: 102 reads, 0 writes

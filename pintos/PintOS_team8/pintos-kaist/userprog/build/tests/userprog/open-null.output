@@ -23,8 +23,8 @@ exit has called!
 
 open-null: 0
 Execution of 'open-null' complete.
-Timer: 558 ticks
-Thread: 44 idle ticks, 487 kernel ticks, 28 user ticks
+Timer: 567 ticks
+Thread: 45 idle ticks, 498 kernel ticks, 25 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 232 writes
 hd1:0: 102 reads, 0 writes

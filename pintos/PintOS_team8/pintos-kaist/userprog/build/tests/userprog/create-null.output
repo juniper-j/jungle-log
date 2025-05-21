@@ -24,8 +24,8 @@ exit has called!
 
 create-null: 0
 Execution of 'create-null' complete.
-Timer: 548 ticks
-Thread: 49 idle ticks, 473 kernel ticks, 27 user ticks
+Timer: 568 ticks
+Thread: 47 idle ticks, 492 kernel ticks, 31 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 79 reads, 232 writes
 hd1:0: 102 reads, 0 writes

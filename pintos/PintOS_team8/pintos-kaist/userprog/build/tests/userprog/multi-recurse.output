@@ -27,8 +27,8 @@ exit has called!
 
 multi-recurse: 1
 Execution of 'multi-recurse' complete.
-Timer: 610 ticks
-Thread: 48 idle ticks, 526 kernel ticks, 37 user ticks
+Timer: 640 ticks
+Thread: 50 idle ticks, 548 kernel ticks, 44 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 87 reads, 254 writes
 hd1:0: 113 reads, 0 writes

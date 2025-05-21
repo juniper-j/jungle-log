@@ -30,8 +30,8 @@ exit has called!
 
 read-normal: 1
 Execution of 'read-normal' complete.
-Timer: 578 ticks
-Thread: 43 idle ticks, 494 kernel ticks, 42 user ticks
+Timer: 584 ticks
+Thread: 46 idle ticks, 500 kernel ticks, 40 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 114 reads, 248 writes
 hd1:0: 105 reads, 0 writes

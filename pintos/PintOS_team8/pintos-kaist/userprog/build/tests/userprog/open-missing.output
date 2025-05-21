@@ -23,8 +23,8 @@ exit has called!
 
 open-missing: 1
 Execution of 'open-missing' complete.
-Timer: 566 ticks
-Thread: 48 idle ticks, 492 kernel ticks, 27 user ticks
+Timer: 568 ticks
+Thread: 47 idle ticks, 495 kernel ticks, 28 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 234 writes
 hd1:0: 103 reads, 0 writes

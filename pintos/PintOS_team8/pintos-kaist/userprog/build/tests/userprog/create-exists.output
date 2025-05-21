@@ -30,8 +30,8 @@ exit has called!
 
 create-exists: 1
 Execution of 'create-exists' complete.
-Timer: 566 ticks
-Thread: 46 idle ticks, 484 kernel ticks, 37 user ticks
+Timer: 584 ticks
+Thread: 41 idle ticks, 504 kernel ticks, 40 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 81 reads, 236 writes
 hd1:0: 104 reads, 0 writes

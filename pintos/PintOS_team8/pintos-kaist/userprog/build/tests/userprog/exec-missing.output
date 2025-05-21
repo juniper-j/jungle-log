@@ -24,8 +24,8 @@ exit has called!
 
 exec-missing: 0
 Execution of 'exec-missing' complete.
-Timer: 564 ticks
-Thread: 47 idle ticks, 490 kernel ticks, 29 user ticks
+Timer: 583 ticks
+Thread: 43 idle ticks, 509 kernel ticks, 32 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 234 writes
 hd1:0: 103 reads, 0 writes

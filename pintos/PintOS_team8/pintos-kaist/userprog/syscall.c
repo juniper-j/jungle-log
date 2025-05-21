@@ -44,63 +44,59 @@ syscall_init (void) {
 
 /* === [2] 메인 syscall 핸들러 === */
 void
-syscall_handler (struct intr_frame *f) {
-	// TODO: Your implementation goes here.
-	//printf("syscall handler has called. \n");
-
-	switch(f->R.rax) {
-	case SYS_HALT:
-		printf("half has called!\n\n");
-		halt();
-		break;
-	case SYS_EXIT:
-		printf("exit has called!\n\n");
-		exit(f->R.rdi);
-		break;
-	case SYS_FORK:
-		printf("fork has called!\n\n");
-		// 🟩 TODO: syscall_handler에서 반환값 필요
-		break;
-	case SYS_EXEC:
-		printf("exec has called!\n\n");
-		// 🟩 TODO: 
-		break;
-	case SYS_WAIT:
-		printf("wait has called!\n\n");
-		// 🟩 TODO: 
-		break;
-	case SYS_CREATE:
-		printf("create has called!\n\n");
-		break;
-	case SYS_REMOVE:
-		printf("remove has called!\n\n");
-		break;
-	case SYS_OPEN:
-		printf("open has called!\n\n");
-		break;
-	case SYS_FILESIZE:
-		printf("filesize has called!\n\n");
-		break;
-	case SYS_READ:
-		printf("read has called!\n\n");
-		write(f->R.rdi, (void *)f->R.rsi, f->R.rdx);
-		break;
-	case SYS_WRITE:
-		write(f->R.rdi, f->R.rsi, f->R.rdx);
-		break;
-	case SYS_SEEK:
-		printf("seek has called!\n\n");
-		break;
-	case SYS_TELL:
-		printf("tell has called!\n\n");
-		break;
-	case SYS_CLOSE:
-		printf("close has called!\n\n");
-		break;
-	default:
-		printf("SERIOUS ERROR!! Unknown syscall numbber\n");
-		thread_exit();
-		break;
+syscall_handler (struct intr_frame *f) 
+{
+	switch(f->R.rax) 
+	{
+		case SYS_HALT:
+			halt();
+			break;
+		case SYS_EXIT:
+			exit(f->R.rdi);
+			break;
+		case SYS_FORK:
+			printf("fork has called!\n\n");
+			// 🟩 TODO: syscall_handler에서 반환값 필요
+			break;
+		case SYS_EXEC:
+			printf("exec has called!\n\n");
+			// 🟩 TODO: 
+			break;
+		case SYS_WAIT:
+			printf("wait has called!\n\n");
+			// 🟩 TODO: 
+			break;
+		case SYS_CREATE:
+			printf("create has called!\n\n");
+			break;
+		case SYS_REMOVE:
+			printf("remove has called!\n\n");
+			break;
+		case SYS_OPEN:
+			printf("open has called!\n\n");
+			break;
+		case SYS_FILESIZE:
+			printf("filesize has called!\n\n");
+			break;
+		case SYS_READ:
+			printf("read has called!\n\n");
+			break;
+		case SYS_WRITE:
+			write(f->R.rdi, f->R.rsi, f->R.rdx);
+			break;
+		case SYS_SEEK:
+			printf("seek has called!\n\n");
+			break;
+		case SYS_TELL:
+			printf("tell has called!\n\n");
+			break;
+		case SYS_CLOSE:
+			printf("close has called!\n\n");
+			break;
+		default:
+			printf("SERIOUS ERROR!! Unknown syscall numbber\n");
+			thread_exit();
+			break;
 	}
 }
 
@@ -117,7 +113,7 @@ void exit(int status) {
 	thread_exit();
 }
 
-tid_t fork(const char *thread_name) {
+pid_t fork(const char *thread_name) {
 	// TODO
 	printf("[stub] fork() not implemented yet.\n");
 	return -1;
@@ -129,7 +125,7 @@ int exec(const char *cmd_line) {
 	return -1;
 }
 
-int wait(tid_t pid) {
+int wait(pid_t pid) {
 	// TODO
 	printf("[stub] wait() not implemented yet.\n");
 	return -1;

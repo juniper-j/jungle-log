@@ -24,8 +24,8 @@ exit has called!
 
 create-empty: 0
 Execution of 'create-empty' complete.
-Timer: 554 ticks
-Thread: 41 idle ticks, 483 kernel ticks, 32 user ticks
+Timer: 569 ticks
+Thread: 47 idle ticks, 494 kernel ticks, 30 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 79 reads, 232 writes
 hd1:0: 102 reads, 0 writes

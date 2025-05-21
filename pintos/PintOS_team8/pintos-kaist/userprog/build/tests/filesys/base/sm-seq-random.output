@@ -28,8 +28,8 @@ exit has called!
 
 sm-seq-random: 1
 Execution of 'sm-seq-random' complete.
-Timer: 573 ticks
-Thread: 48 idle ticks, 489 kernel ticks, 37 user ticks
+Timer: 607 ticks
+Thread: 49 idle ticks, 523 kernel ticks, 36 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 81 reads, 242 writes
 hd1:0: 107 reads, 0 writes

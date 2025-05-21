@@ -49,12 +49,12 @@ exit has called!
 
 syn-remove: 1
 Execution of 'syn-remove' complete.
-Timer: 649 ticks
-Thread: 46 idle ticks, 492 kernel ticks, 112 user ticks
+Timer: 637 ticks
+Thread: 48 idle ticks, 504 kernel ticks, 86 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 82 reads, 246 writes
 hd1:0: 109 reads, 0 writes
-Console: 2342 characters output
+Console: 2341 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

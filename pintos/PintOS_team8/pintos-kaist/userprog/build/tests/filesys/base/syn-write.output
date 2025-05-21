@@ -58,8 +58,8 @@ exit has called!
 
 syn-write: 1
 Execution of 'syn-write' complete.
-Timer: 641 ticks
-Thread: 58 idle ticks, 502 kernel ticks, 82 user ticks
+Timer: 625 ticks
+Thread: 60 idle ticks, 511 kernel ticks, 55 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 109 reads, 490 writes
 hd1:0: 226 reads, 0 writes

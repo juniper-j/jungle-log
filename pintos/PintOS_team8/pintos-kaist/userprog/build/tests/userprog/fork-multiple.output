@@ -41,8 +41,8 @@ exit has called!
 
 fork-multiple: 0
 Execution of 'fork-multiple' complete.
-Timer: 577 ticks
-Thread: 37 idle ticks, 491 kernel ticks, 50 user ticks
+Timer: 609 ticks
+Thread: 47 idle ticks, 511 kernel ticks, 53 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 87 reads, 236 writes
 hd1:0: 104 reads, 0 writes

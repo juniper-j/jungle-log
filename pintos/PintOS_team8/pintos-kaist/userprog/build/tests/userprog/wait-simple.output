@@ -27,8 +27,8 @@ exit has called!
 
 wait-simple: 0
 Execution of 'wait-simple' complete.
-Timer: 609 ticks
-Thread: 60 idle ticks, 520 kernel ticks, 30 user ticks
+Timer: 655 ticks
+Thread: 69 idle ticks, 557 kernel ticks, 30 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 107 reads, 446 writes
 hd1:0: 204 reads, 0 writes

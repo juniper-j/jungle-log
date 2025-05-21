@@ -59,8 +59,8 @@ exit has called!
 
 args-many: 0
 Execution of 'args-many' complete.
-Timer: 648 ticks
-Thread: 48 idle ticks, 475 kernel ticks, 126 user ticks
+Timer: 718 ticks
+Thread: 45 idle ticks, 531 kernel ticks, 143 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 232 writes
 hd1:0: 102 reads, 0 writes

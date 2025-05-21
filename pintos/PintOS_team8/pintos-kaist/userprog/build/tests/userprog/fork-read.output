@@ -33,8 +33,8 @@ exit has called!
 
 fork-read: 1
 Execution of 'fork-read' complete.
-Timer: 579 ticks
-Thread: 38 idle ticks, 505 kernel ticks, 38 user ticks
+Timer: 587 ticks
+Thread: 52 idle ticks, 500 kernel ticks, 37 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 111 reads, 260 writes
 hd1:0: 111 reads, 0 writes

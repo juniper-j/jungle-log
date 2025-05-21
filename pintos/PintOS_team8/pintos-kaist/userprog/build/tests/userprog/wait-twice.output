@@ -30,8 +30,8 @@ exit has called!
 
 wait-twice: 0
 Execution of 'wait-twice' complete.
-Timer: 593 ticks
-Thread: 57 idle ticks, 504 kernel ticks, 33 user ticks
+Timer: 608 ticks
+Thread: 58 idle ticks, 517 kernel ticks, 34 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 107 reads, 446 writes
 hd1:0: 204 reads, 0 writes

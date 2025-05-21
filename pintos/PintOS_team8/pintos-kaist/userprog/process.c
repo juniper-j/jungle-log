@@ -392,17 +392,17 @@ argument_stack (char **argv, int argc, void **rsp)
     **(void ***)rsp = 0;						// 리턴 주소 dummy (실행 종료 시 사용)
 }
 
-void
-argument_stack (char **argv, int argc, struct intr_frame *if_)
-{
-	int stack_shift;		// 포인터를 이동시킬 단위
-	int stack_ptr;			// 포인터
-	
-	/* ------------------ [1단계: 프로그램 이름(Name), 인자 문자열(Data) push] ------------------ */
 
+// 혼자 해보기
+// void
+// argument_stack (char **argv, int argc, struct intr_frame *if_)
+// {
+// 	int stack_shift;		// 포인터를 이동시킬 단위
+// 	int stack_ptr;			// 포인터
 	
-}
-
+// 	/* ------------------ [1단계: 프로그램 이름(Name), 인자 문자열(Data) push] ------------------ */
+	
+// }
 
 
 /* Waits for thread TID to die and returns its exit status.  If

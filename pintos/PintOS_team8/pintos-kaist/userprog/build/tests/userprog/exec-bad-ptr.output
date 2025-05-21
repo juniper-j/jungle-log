@@ -23,8 +23,8 @@ exit has called!
 
 exec-bad-ptr: 0
 Execution of 'exec-bad-ptr' complete.
-Timer: 568 ticks
-Thread: 41 idle ticks, 501 kernel ticks, 27 user ticks
+Timer: 584 ticks
+Thread: 47 idle ticks, 512 kernel ticks, 26 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 232 writes
 hd1:0: 102 reads, 0 writes

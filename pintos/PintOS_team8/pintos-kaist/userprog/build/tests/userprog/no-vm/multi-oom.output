@@ -26,8 +26,8 @@ exit has called!
 
 multi-oom: 1
 Execution of 'multi-oom' complete.
-Timer: 571 ticks
-Thread: 46 idle ticks, 492 kernel ticks, 34 user ticks
+Timer: 587 ticks
+Thread: 50 idle ticks, 506 kernel ticks, 33 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 83 reads, 242 writes
 hd1:0: 107 reads, 0 writes

@@ -28,8 +28,8 @@ exit has called!
 
 close-normal: 0
 Execution of 'close-normal' complete.
-Timer: 572 ticks
-Thread: 49 idle ticks, 489 kernel ticks, 35 user ticks
+Timer: 580 ticks
+Thread: 51 idle ticks, 498 kernel ticks, 33 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 107 reads, 248 writes
 hd1:0: 105 reads, 0 writes

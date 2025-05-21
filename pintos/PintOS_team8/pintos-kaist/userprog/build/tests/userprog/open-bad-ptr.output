@@ -24,8 +24,8 @@ exit has called!
 
 open-bad-ptr: 1
 Execution of 'open-bad-ptr' complete.
-Timer: 564 ticks
-Thread: 48 idle ticks, 486 kernel ticks, 31 user ticks
+Timer: 606 ticks
+Thread: 49 idle ticks, 526 kernel ticks, 32 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 234 writes
 hd1:0: 103 reads, 0 writes
