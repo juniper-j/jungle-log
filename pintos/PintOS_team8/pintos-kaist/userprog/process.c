@@ -318,7 +318,7 @@ process_exec (void *f_name)
 	/* ------------------ [5단계: 스택 구조 디버깅용 출력] ------------------ */
 	/* 스택 상의 내용(문자열, 포인터, argc 등)을 16진수로 출력
 		argument_stack이 올바르게 구성됐는지 확인하는 데 유용 */
-	hex_dump(_if.rsp, _if.rsp, USER_STACK - (uint64_t)_if.rsp, true);
+	// hex_dump(_if.rsp, _if.rsp, USER_STACK - (uint64_t)_if.rsp, true);
 
 	/* 로딩 실패 시 할당된 페이지 해제 후 -1 반환 */
 	palloc_free_page (file_name);
