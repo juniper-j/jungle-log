@@ -137,8 +137,10 @@ dir_add (struct dir *dir, const char *name, disk_sector_t inode_sector) {
 		return false;
 
 	/* Check that NAME is not in use. */
-	if (lookup (dir, name, NULL, NULL))
+	if (lookup (dir, name, NULL, NULL)) {
 		goto done;
+	}
+		
 
 	/* Set OFS to offset of free slot.
 	 * If there are no free slots, then it will be set to the

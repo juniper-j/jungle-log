@@ -8,10 +8,12 @@
 #include "threads/flags.h"
 #include "intrinsic.h"
 #include "threads/init.h"
+#include "filesys/filesys.h"
 // #include "threads/pml4.h"   // ✅ 보통 이게 필요함 -> 🟩 TODO:근데 임포트 못하는거 보니 다른 방법 찾아야 함...
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
+
 
 /* System call.
  *
@@ -30,6 +32,7 @@ void syscall_handler (struct intr_frame *);
 
 void
 syscall_init (void) {
+	// lock_init(&filelock);
 	write_msr(MSR_STAR, ((uint64_t)SEL_UCSEG - 0x10) << 48  |
 			((uint64_t)SEL_KCSEG) << 32);
 	write_msr(MSR_LSTAR, (uint64_t) syscall_entry);
@@ -56,7 +59,7 @@ syscall_handler (struct intr_frame *f)
 			break;
 		case SYS_FORK:
 			printf("fork has called!\n\n");
-			// 🟩 TODO: syscall_handler에서 반환값 필요
+			// 🟩 TODO
 			break;
 		case SYS_EXEC:
 			printf("exec has called!\n\n");
@@ -67,30 +70,38 @@ syscall_handler (struct intr_frame *f)
 			// 🟩 TODO: 
 			break;
 		case SYS_CREATE:
-			printf("create has called!\n\n");
+			validate_address(f->R.rdi);
+			f->R.rax = create(f->R.rdi, f->R.rsi);
 			break;
 		case SYS_REMOVE:
+			// 🟩 TODO
 			printf("remove has called!\n\n");
 			break;
 		case SYS_OPEN:
+			// 🟩 TODO
 			printf("open has called!\n\n");
 			break;
 		case SYS_FILESIZE:
+			// 🟩 TODO
 			printf("filesize has called!\n\n");
 			break;
 		case SYS_READ:
+			// 🟩 TODO
 			printf("read has called!\n\n");
 			break;
 		case SYS_WRITE:
-			write(f->R.rdi, f->R.rsi, f->R.rdx);
+			f->R.rax = write(f->R.rdi, f->R.rsi, f->R.rdx);
 			break;
 		case SYS_SEEK:
+			// 🟩 TODO
 			printf("seek has called!\n\n");
 			break;
 		case SYS_TELL:
+			// 🟩 TODO
 			printf("tell has called!\n\n");
 			break;
 		case SYS_CLOSE:
+			// 🟩 TODO
 			printf("close has called!\n\n");
 			break;
 		default:
@@ -131,10 +142,33 @@ int wait(pid_t pid) {
 	return -1;
 }
 
-bool create(const char *file, unsigned initial_size) {
-	// TODO
-	printf("[stub] create() not implemented yet.\n");
-	return false;
+/***************************************************************
+ * create - 주어진 이름과 크기로 새로운 파일을 생성 (열지는 않음)
+ * 
+ * 기능:
+ *  - filesys_create(name, initial_size)를 호출하여 주어진 크기의 새 파일을 생성함
+ *  - 생성만 수행하며, 열기는 별도로 open을 호출해야 함
+ * 
+ * 매개변수:
+ *  - const char *file: 생성할 파일 이름 (문자열)
+ *  - unsigned initial_size: 파일의 초기 크기 (byte 단위)
+ * 
+ * 반환값:
+ *  - 생성에 성공하면 true, 실패하면 false
+ ***************************************************************/
+bool 
+create (const char *file, unsigned initial_size) 
+{
+	// lock_acquire(&file_lock);
+	// bool success = filesys_create(file, initial_size);
+	// lock_release(&file_lock);
+
+	// return filesys_create(file, initial_size);
+
+	if (pml4_get_page(thread_current()->pml4, file) == NULL) exit(-1);
+	if(strlen(file) == 0) exit(-1);
+	if(strlen(file) > 128) return false; // create-long 테스트 케이스 대비
+	return filesys_create(file, initial_size);
 }
 
 bool remove(const char *file) {
@@ -158,7 +192,7 @@ int filesize(int fd) {
 int read(int fd, void *buffer, unsigned size) {
 	// ✅ 유효한 유저 주소인지 확인 (중요!)
 	// for (unsigned i = 0; i < size; i++) {
-	// 	check_address((uint8_t *)buffer + i);
+	// 	validate_address((uint8_t *)buffer + i);
 	// }
 
 	// if (fd == 0) {
@@ -189,7 +223,9 @@ int read(int fd, void *buffer, unsigned size) {
  *  - const void *buffer: 기록할 데이터가 위치한 버퍼
  *  - unsigned size: 기록할 바이트 수
  ***************************************************************/
-int write(int fd, const void *buffer, unsigned size) {
+int 
+write (int fd, const void *buffer, unsigned size) 
+{
 
 	/*
 	✅ 유저 포인터 유효성 검사
@@ -200,7 +236,7 @@ int write(int fd, const void *buffer, unsigned size) {
 		e.g. validate_buffer(buffer, size);
 	*/ 
 	// for (unsigned i = 0; i < size; i++) {
-	// 	check_address((const uint8_t *)buffer + i);
+	// 	validate_address((const uint8_t *)buffer + i);
 	// }
 
 	if (fd == 1) {
@@ -250,8 +286,38 @@ void close(int fd) {
 
 /* === [4] 주소 유효성 검사 함수 === */
 
-void check_address(const void *addr) {
+/***************************************************************
+ * validate_address - 유저가 전달한 포인터 주소(addr)가 유효한지 검사
+ *
+ * @addr: 확인할 유저 주소
+ *
+ * 기능:
+ * - is_user_vaddr: addr가 유저 가상 주소(0x80000000 이하)인지 확인
+ * - pml4_get_page: 해당 주소가 현재 스레드의 페이지 테이블에 실제 매핑돼 있는지 확인
+ * - 위 두 조건 중 하나라도 틀리면 즉시 exit(-1)로 프로세스를 종료
+ *
+ * 사용 목적:
+ * - 시스템 콜에서 유저 포인터가 커널/물리 메모리를 침범하지 않도록 방어
+ ***************************************************************/
+void validate_address(const uint64_t addr) 
+{
 	if (!is_user_vaddr(addr) || pml4_get_page(thread_current()->pml4, addr) == NULL) {
-		exit(-1);  // 유저 주소가 아니거나 매핑 안 된 주소
+		exit(-1);
+	}
+}
+
+void validate_buffer(const void *buffer, size_t size) 
+{
+	for (size_t i = 0; i < size; i++) {
+		validate_address((const uint8_t *)buffer + i);
+	}
+}
+
+void validate_cstring(const char *s) 
+{	// 길이가 확정되지 않은 문자열
+	while (true) {
+		validate_address(s);
+		if (*s == '\0') break;
+		s++;
 	}
 }
