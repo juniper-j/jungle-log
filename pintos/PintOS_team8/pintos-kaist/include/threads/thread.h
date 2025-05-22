@@ -29,7 +29,7 @@ typedef tid_t pid_t;					/* 유저 프로세스 ID (논리적으로 tid_t와 같
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
-#define FD_MAX 128						/* 파일 디스크립터 동적 할당 최댓값 (논리적으로 제한) */
+#define FD_MAX 64						/* 파일 디스크립터 동적 할당 최댓값 (논리적으로 제한) */
 
 /* A kernel thread or user process.
  *
@@ -90,32 +90,34 @@ typedef tid_t pid_t;					/* 유저 프로세스 ID (논리적으로 tid_t와 같
  * blocked state is on a semaphore wait list. */
 
 struct thread {
-	/* Owned by thread.c. */
+	/* 스레드 식별 및 상태 관련 필드 */
 	tid_t tid;                          /* Thread identifier. */
-	enum thread_status status;          /* Thread state. */
 	char name[16];                      /* Name (for debugging purposes). */
+	enum thread_status status;          /* Thread state. */
 	int priority;                       /* Priority. */
 	int base_priority;                  /* 기부 이전의 기본 우선순위 */
+
+	/* 스케줄링 및 대기 관련 필드 (alarm, ready/blocked list 등) */
 	int64_t wakeup_ticks;				/* 깨워야 할 시간 (alarm sleep용) */
 	int64_t wakeup_tick;                /* 깨어나기까지 남은 시간 */ 
-	
+	struct list_elem elem;              /* ready/blocked 리스트용 element */
+
+	/* Priority Donation 관련 필드 */
 	struct lock *wait_on_lock;          /* 대기 중인 lock 객체 */
 	struct list donations;              /* 우선순위 donations를 추적하기 위한 리스트 */
 	struct list_elem d_elem;            /* donations 리스트에 들어갈 element */
 
-	/* Shared between thread.c and synch.c. */
-	struct list_elem elem;              /* ready/blocked 리스트용 element */
-
+	
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
-	uint64_t *pml4;                     /* Page map level 4 */
+	uint64_t *pml4;                     /* Page map level 4 for this thread (address space). */
 
 	/* Parent thread (used for wait/exit sync). */
 	struct thread *parent;  			/* 해당 스레드를 생성한 부모 스레드 포인터 */
 
 	/* File Descriptor Table (FDT) */
-	// struct file **fdt[FD_MAX];          /* 파일 디스크립터 테이블 */
-	// int next_fd;                        /* 다음 파일 디스크립터 번호 (보통 2부터 시작) */
+	struct file *fd_table[FD_MAX];          /* 파일 디스크립터 테이블 */
+	int next_fd;                       		/* 다음 파일 디스크립터 번호 (보통 2부터 시작) */
 #endif
 #ifdef VM
 	/* Table for whole virtual memory owned by thread. */
@@ -123,10 +125,8 @@ struct thread {
 #endif
 
 	/* Owned by thread.c. */
-	struct intr_frame tf;               /* Information for switching */
-	unsigned magic;                     /* Detects stack overflow. */
-	struct file* fd_table[64];
-	int next_fd;
+	struct intr_frame tf;              /* Used during context switching. */
+	unsigned magic;                    /* Used to detect stack overflow. */
 };
 
 
