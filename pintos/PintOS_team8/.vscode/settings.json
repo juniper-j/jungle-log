@@ -16,6 +16,7 @@
         "lib.h": "c",
         "interrupt.h": "c",
         "filesys.h": "c",
-        "init.h": "c"
+        "init.h": "c",
+        "string.h": "c"
     }
 }

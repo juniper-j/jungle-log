@@ -146,17 +146,17 @@ page_fault (struct intr_frame *f) {
 	if (vm_try_handle_fault (f, fault_addr, user, write, not_present))
 		return;
 #endif
+	exit(-1);
+	// /* Count page faults. */
+	// page_fault_cnt++;
 
-	/* Count page faults. */
-	page_fault_cnt++;
-
-	/* If the fault is true fault, show info and exit. */
-	// exit(-1) 호출해야 함
-	printf ("Page fault at %p: %s error %s page in %s context.\n",
-			fault_addr,
-			not_present ? "not present" : "rights violation",
-			write ? "writing" : "reading",
-			user ? "user" : "kernel");
-	kill (f);
+	// /* If the fault is true fault, show info and exit. */
+	// // TODO: exit(-1) 호출해야 함
+	// printf ("Page fault at %p: %s error %s page in %s context.\n",
+	// 		fault_addr,
+	// 		not_present ? "not present" : "rights violation",
+	// 		write ? "writing" : "reading",
+	// 		user ? "user" : "kernel");
+	// kill (f);
 }
 

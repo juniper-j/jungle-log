@@ -13,6 +13,8 @@
 #include "threads/vaddr.h"
 #include <stdint.h>
 #include "filesys/file.h"
+#include "threads/palloc.h"
+#include <string.h>
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
@@ -156,9 +158,14 @@ fork(const char *thread_name) {
 
 int 
 exec(const char *cmd_line) {
-	// TODO
-	printf("[stub] exec() not implemented yet.\n");
-	return -1;
+	// 페이지 할당 받고, cmd_line 옮겨서 그걸로 process_exec()
+	char *cmd_copy = palloc_get_page(PAL_ZERO);
+	if (cmd_copy == NULL)
+		return -1;
+	memcpy(cmd_copy, cmd_line, strlen(cmd_line) + 1);
+	if (process_exec(cmd_copy) == -1)
+		return -1;
+	NOT_REACHED ();
 }
 
 int 
@@ -281,9 +288,16 @@ read(int fd, void *buffer, unsigned size)
 		return size;
 	}	
 
+	if (fd < 0 || fd >= FD_MAX) 
+	{	// 유효하지 않은 fd면 읽기 실패
+		lock_release(&filelock);
+		return -1;
+	}
+
+	// 파일 디스크립터 → 커널의 파일 구조체 획득	
 	struct file *file = process_get_file(fd);
-	if (fd < 0 || fd >= FD_MAX || file == NULL) 
-	{	// 유효하지 않은 fd 또는 파일이 NULL이면 읽기 실패
+	if (file == NULL) 
+	{	// 파일이 NULL이면 읽기 실패
 		lock_release(&filelock);
 		return -1;
 	}
@@ -318,10 +332,16 @@ write (int fd, const void *buffer, unsigned size)
 
 	lock_acquire (&filelock);
 
+	if (fd < 0 || fd >= FD_MAX) 
+	{	// 유효하지 않은 fd면 읽기 실패
+		lock_release(&filelock);
+		return -1;
+	}
+
 	// 파일 디스크립터 → 커널의 파일 구조체 획득
 	struct file *file = process_get_file(fd);
-	if (fd < 0 || fd >= FD_MAX || file == NULL) 
-	{	// 유효하지 않은 fd 또는 파일이 NULL이면 읽기 실패
+	if (file == NULL) 
+	{	// 파일이 NULL이면 읽기 실패
 		lock_release(&filelock);
 		return -1;
 	}
@@ -357,11 +377,21 @@ void
 close(int fd) 							 // 🚨 이거 손봐야 함
 {
 	lock_acquire(&filelock);
-	struct file *file = process_get_file(fd);
-	if (fd < 2 || fd >= FD_MAX || file == NULL) {
+
+	if (fd < 0 || fd >= FD_MAX) 
+	{	// 유효하지 않은 fd면 읽기 실패
 		lock_release(&filelock);
-		return;
+		return -1;
 	}
+
+	// 파일 디스크립터 → 커널의 파일 구조체 획득
+	struct file *file = process_get_file(fd);
+	if (file == NULL) 
+	{	// 파일이 NULL이면 읽기 실패
+		lock_release(&filelock);
+		return -1;
+	}
+
 	file_close(file);
 	thread_current()->fd_table[fd] = NULL;
 	lock_release(&filelock);

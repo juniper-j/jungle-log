@@ -1,26 +1,13 @@
 FAIL
-Test output failed to match any acceptable form.
-
-Acceptable output:
-  (exec-missing) begin
-  load: no-such-file: open failed
-  exec-missing: exit(-1)
-Differences in `diff -u' format:
-  (exec-missing) begin
-- load: no-such-file: open failed
-- exec-missing: exit(-1)
-+ [stub] exec() not implemented yet.
-+ (exec-missing) exec("no-such-file"): -1
-+ (exec-missing) end
-+ exec-missing: exit(0)
-Acceptable output:
-  (exec-missing) begin
-  (exec-missing) exec("no-such-file"): -1
-  exec-missing: exit(-1)
-Differences in `diff -u' format:
-  (exec-missing) begin
-+ [stub] exec() not implemented yet.
-  (exec-missing) exec("no-such-file"): -1
-- exec-missing: exit(-1)
-+ (exec-missing) end
-+ exec-missing: exit(0)
+Kernel panic in run: PANIC at ../../userprog/exception.c:97 in kill(): Kernel bug - unexpected interrupt in kernel
+Call stack: 0x8004217e46 0x800421c6db 0x800421c85a 0x8004208d6a 0x8004209188 0x800421b7fa 0x800421cde3 0x800421ca5f 0x800421c8cf
+Translation of call stack:
+0x0000008004217e46: debug_panic (lib/kernel/debug.c:32)
+0x000000800421c6db: kill (userprog/exception.c:103)
+0x000000800421c85a: page_fault (userprog/exception.c:161 (discriminator 12))
+0x0000008004208d6a: intr_handler (threads/interrupt.c:412)
+0x0000008004209188: intr_entry (threads/intr-stubs.o:?)
+0x000000800421b7fa: process_exec (userprog/process.c:315)
+0x000000800421cde3: exec (userprog/syscall.c:166)
+0x000000800421ca5f: syscall_handler (userprog/syscall.c:74)
+0x000000800421c8cf: no_sti (userprog/syscall-entry.o:?)

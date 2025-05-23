@@ -70,21 +70,7 @@ perl -I../.. ../../tests/userprog/close-twice.ck tests/userprog/close-twice test
 pass tests/userprog/close-twice
 pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/close-bad-fd:close-bad-fd -- -q   -f run close-bad-fd < /dev/null 2> tests/userprog/close-bad-fd.errors > tests/userprog/close-bad-fd.output
 perl -I../.. ../../tests/userprog/close-bad-fd.ck tests/userprog/close-bad-fd tests/userprog/close-bad-fd.result
-FAIL tests/userprog/close-bad-fd
-Kernel panic in run: PANIC at ../../userprog/exception.c:97 in kill(): Kernel bug - unexpected interrupt in kernel
-Call stack: 0x8004217e46 0x800421c6db 0x800421c85a 0x8004208d6a 0x8004209188 0x800421d24b 0x800421ccb6 0x800421c8cf 0x4000fd 0x40015b 0x400bfc
-Translation of call stack:
-0x0000008004217e46: debug_panic (lib/kernel/debug.c:32)
-0x000000800421c6db: kill (userprog/exception.c:103)
-0x000000800421c85a: page_fault (userprog/exception.c:161 (discriminator 12))
-0x0000008004208d6a: intr_handler (threads/interrupt.c:412)
-0x0000008004209188: intr_entry (threads/intr-stubs.o:?)
-0x000000800421d24b: close (userprog/syscall.c:358)
-0x000000800421ccb6: syscall_handler (userprog/syscall.c:108)
-0x000000800421c8cf: no_sti (userprog/syscall-entry.o:?)
-0x00000000004000fd: (unknown)
-0x000000000040015b: (unknown)
-0x0000000000400bfc: (unknown)
+pass tests/userprog/close-bad-fd
 pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/read-normal:read-normal -p ../../tests/userprog/sample.txt:sample.txt -- -q   -f run read-normal < /dev/null 2> tests/userprog/read-normal.errors > tests/userprog/read-normal.output
 perl -I../.. ../../tests/userprog/read-normal.ck tests/userprog/read-normal tests/userprog/read-normal.result
 pass tests/userprog/read-normal
@@ -102,21 +88,7 @@ perl -I../.. ../../tests/userprog/read-stdout.ck tests/userprog/read-stdout test
 pass tests/userprog/read-stdout
 pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/read-bad-fd:read-bad-fd -- -q   -f run read-bad-fd < /dev/null 2> tests/userprog/read-bad-fd.errors > tests/userprog/read-bad-fd.output
 perl -I../.. ../../tests/userprog/read-bad-fd.ck tests/userprog/read-bad-fd tests/userprog/read-bad-fd.result
-FAIL tests/userprog/read-bad-fd
-Kernel panic in run: PANIC at ../../userprog/exception.c:97 in kill(): Kernel bug - unexpected interrupt in kernel
-Call stack: 0x8004217e46 0x800421c6db 0x800421c85a 0x8004208d6a 0x8004209188 0x800421d000 0x800421cbe5 0x800421c8cf 0x40010d 0x400219 0x400cba
-Translation of call stack:
-0x0000008004217e46: debug_panic (lib/kernel/debug.c:32)
-0x000000800421c6db: kill (userprog/exception.c:103)
-0x000000800421c85a: page_fault (userprog/exception.c:161 (discriminator 12))
-0x0000008004208d6a: intr_handler (threads/interrupt.c:412)
-0x0000008004209188: intr_entry (threads/intr-stubs.o:?)
-0x000000800421d000: read (userprog/syscall.c:284)
-0x000000800421cbe5: syscall_handler (userprog/syscall.c:94)
-0x000000800421c8cf: no_sti (userprog/syscall-entry.o:?)
-0x000000000040010d: (unknown)
-0x0000000000400219: (unknown)
-0x0000000000400cba: (unknown)
+pass tests/userprog/read-bad-fd
 pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/write-normal:write-normal -p ../../tests/userprog/sample.txt:sample.txt -- -q   -f run write-normal < /dev/null 2> tests/userprog/write-normal.errors > tests/userprog/write-normal.output
 perl -I../.. ../../tests/userprog/write-normal.ck tests/userprog/write-normal tests/userprog/write-normal.result
 pass tests/userprog/write-normal
@@ -134,21 +106,7 @@ perl -I../.. ../../tests/userprog/write-stdin.ck tests/userprog/write-stdin test
 pass tests/userprog/write-stdin
 pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/write-bad-fd:write-bad-fd -- -q   -f run write-bad-fd < /dev/null 2> tests/userprog/write-bad-fd.errors > tests/userprog/write-bad-fd.output
 perl -I../.. ../../tests/userprog/write-bad-fd.ck tests/userprog/write-bad-fd tests/userprog/write-bad-fd.result
-FAIL tests/userprog/write-bad-fd
-Kernel panic in run: PANIC at ../../userprog/exception.c:97 in kill(): Kernel bug - unexpected interrupt in kernel
-Call stack: 0x8004217e46 0x800421c6db 0x800421c85a 0x8004208d6a 0x8004209188 0x800421d0cf 0x800421cc4a 0x800421c8cf 0x400111 0x40021d 0x400cbe
-Translation of call stack:
-0x0000008004217e46: debug_panic (lib/kernel/debug.c:32)
-0x000000800421c6db: kill (userprog/exception.c:103)
-0x000000800421c85a: page_fault (userprog/exception.c:161 (discriminator 12))
-0x0000008004208d6a: intr_handler (threads/interrupt.c:412)
-0x0000008004209188: intr_entry (threads/intr-stubs.o:?)
-0x000000800421d0cf: write (userprog/syscall.c:322)
-0x000000800421cc4a: syscall_handler (userprog/syscall.c:98)
-0x000000800421c8cf: no_sti (userprog/syscall-entry.o:?)
-0x0000000000400111: (unknown)
-0x000000000040021d: (unknown)
-0x0000000000400cbe: (unknown)
+pass tests/userprog/write-bad-fd
 pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/fork-once:fork-once -- -q   -f run fork-once < /dev/null 2> tests/userprog/fork-once.errors > tests/userprog/fork-once.output
 perl -I../.. ../../tests/userprog/fork-once.ck tests/userprog/fork-once tests/userprog/fork-once.result
 FAIL tests/userprog/fork-once
@@ -342,49 +300,10 @@ FAIL tests/userprog/fork-boundary
 run: fork: FAILED
 pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/exec-once:exec-once -p tests/userprog/child-simple:child-simple -- -q   -f run exec-once < /dev/null 2> tests/userprog/exec-once.errors > tests/userprog/exec-once.output
 perl -I../.. ../../tests/userprog/exec-once.ck tests/userprog/exec-once tests/userprog/exec-once.result
-FAIL tests/userprog/exec-once
-Test output failed to match any acceptable form.
-
-Acceptable output:
-  (exec-once) begin
-  (exec-once) I'm your father
-  (child-simple) run
-  exec-once: exit(81)
-Differences in `diff -u' format:
-  (exec-once) begin
-  (exec-once) I'm your father
-- (child-simple) run
-- exec-once: exit(81)
-+ [stub] exec() not implemented yet.
-+ (exec-once) end
-+ exec-once: exit(0)
+pass tests/userprog/exec-once
 pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/exec-arg:exec-arg -p tests/userprog/child-args:child-args -- -q   -f run exec-arg < /dev/null 2> tests/userprog/exec-arg.errors > tests/userprog/exec-arg.output
 perl -I../.. ../../tests/userprog/exec-arg.ck tests/userprog/exec-arg tests/userprog/exec-arg.result
-FAIL tests/userprog/exec-arg
-Test output failed to match any acceptable form.
-
-Acceptable output:
-  (exec-arg) begin
-  (exec-arg) I'm your father
-  (args) begin
-  (args) argc = 2
-  (args) argv[0] = 'child-args'
-  (args) argv[1] = 'childarg'
-  (args) argv[2] = null
-  (args) end
-  exec-arg: exit(0)
-Differences in `diff -u' format:
-  (exec-arg) begin
-  (exec-arg) I'm your father
-- (args) begin
-- (args) argc = 2
-- (args) argv[0] = 'child-args'
-- (args) argv[1] = 'childarg'
-- (args) argv[2] = null
-- (args) end
-+ [stub] exec() not implemented yet.
-+ (exec-arg) end
-  exec-arg: exit(0)
+pass tests/userprog/exec-arg
 pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/exec-boundary:exec-boundary -p tests/userprog/child-simple:child-simple -- -q   -f run exec-boundary < /dev/null 2> tests/userprog/exec-boundary.errors > tests/userprog/exec-boundary.output
 perl -I../.. ../../tests/userprog/exec-boundary.ck tests/userprog/exec-boundary tests/userprog/exec-boundary.result
 FAIL tests/userprog/exec-boundary
@@ -392,31 +311,18 @@ run: fork: FAILED
 pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/exec-missing:exec-missing -- -q   -f run exec-missing < /dev/null 2> tests/userprog/exec-missing.errors > tests/userprog/exec-missing.output
 perl -I../.. ../../tests/userprog/exec-missing.ck tests/userprog/exec-missing tests/userprog/exec-missing.result
 FAIL tests/userprog/exec-missing
-Test output failed to match any acceptable form.
-
-Acceptable output:
-  (exec-missing) begin
-  load: no-such-file: open failed
-  exec-missing: exit(-1)
-Differences in `diff -u' format:
-  (exec-missing) begin
-- load: no-such-file: open failed
-- exec-missing: exit(-1)
-+ [stub] exec() not implemented yet.
-+ (exec-missing) exec("no-such-file"): -1
-+ (exec-missing) end
-+ exec-missing: exit(0)
-Acceptable output:
-  (exec-missing) begin
-  (exec-missing) exec("no-such-file"): -1
-  exec-missing: exit(-1)
-Differences in `diff -u' format:
-  (exec-missing) begin
-+ [stub] exec() not implemented yet.
-  (exec-missing) exec("no-such-file"): -1
-- exec-missing: exit(-1)
-+ (exec-missing) end
-+ exec-missing: exit(0)
+Kernel panic in run: PANIC at ../../userprog/exception.c:97 in kill(): Kernel bug - unexpected interrupt in kernel
+Call stack: 0x8004217e46 0x800421c6db 0x800421c85a 0x8004208d6a 0x8004209188 0x800421b7fa 0x800421cde3 0x800421ca5f 0x800421c8cf
+Translation of call stack:
+0x0000008004217e46: debug_panic (lib/kernel/debug.c:32)
+0x000000800421c6db: kill (userprog/exception.c:103)
+0x000000800421c85a: page_fault (userprog/exception.c:161 (discriminator 12))
+0x0000008004208d6a: intr_handler (threads/interrupt.c:412)
+0x0000008004209188: intr_entry (threads/intr-stubs.o:?)
+0x000000800421b7fa: process_exec (userprog/process.c:315)
+0x000000800421cde3: exec (userprog/syscall.c:166)
+0x000000800421ca5f: syscall_handler (userprog/syscall.c:74)
+0x000000800421c8cf: no_sti (userprog/syscall-entry.o:?)
 pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/exec-bad-ptr:exec-bad-ptr -- -q   -f run exec-bad-ptr < /dev/null 2> tests/userprog/exec-bad-ptr.errors > tests/userprog/exec-bad-ptr.output
 perl -I../.. ../../tests/userprog/exec-bad-ptr.ck tests/userprog/exec-bad-ptr tests/userprog/exec-bad-ptr.result
 pass tests/userprog/exec-bad-ptr
@@ -510,22 +416,6 @@ Test output failed to match any acceptable form.
 Acceptable output:
   (wait-killed) begin
   (child-bad) begin
-  child-bad: exit(-1)
-  (wait-killed) wait(exec()) = -1
-  (wait-killed) end
-  wait-killed: exit(0)
-Differences in `diff -u' format:
-  (wait-killed) begin
-- (child-bad) begin
-- child-bad: exit(-1)
-+ [stub] fork() not implemented yet.
-+ [stub] wait() not implemented yet.
-  (wait-killed) wait(exec()) = -1
-  (wait-killed) end
-  wait-killed: exit(0)
-Acceptable output:
-  (wait-killed) begin
-  (child-bad) begin
   load: pintos: open failed
   child-bad: exit(-1)
   (wait-killed) wait(exec()) = -1
@@ -541,11 +431,36 @@ Differences in `diff -u' format:
   (wait-killed) wait(exec()) = -1
   (wait-killed) end
   wait-killed: exit(0)
+Acceptable output:
+  (wait-killed) begin
+  (child-bad) begin
+  child-bad: exit(-1)
+  (wait-killed) wait(exec()) = -1
+  (wait-killed) end
+  wait-killed: exit(0)
+Differences in `diff -u' format:
+  (wait-killed) begin
+- (child-bad) begin
+- child-bad: exit(-1)
++ [stub] fork() not implemented yet.
++ [stub] wait() not implemented yet.
+  (wait-killed) wait(exec()) = -1
+  (wait-killed) end
+  wait-killed: exit(0)
 pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/wait-bad-pid:wait-bad-pid -- -q   -f run wait-bad-pid < /dev/null 2> tests/userprog/wait-bad-pid.errors > tests/userprog/wait-bad-pid.output
 perl -I../.. ../../tests/userprog/wait-bad-pid.ck tests/userprog/wait-bad-pid tests/userprog/wait-bad-pid.result
 FAIL tests/userprog/wait-bad-pid
 Test output failed to match any acceptable form.
 
+Acceptable output:
+  (wait-bad-pid) begin
+  (wait-bad-pid) end
+  wait-bad-pid: exit(0)
+Differences in `diff -u' format:
+  (wait-bad-pid) begin
++ [stub] wait() not implemented yet.
+  (wait-bad-pid) end
+  wait-bad-pid: exit(0)
 Acceptable output:
   (wait-bad-pid) begin
   wait-bad-pid: exit(-1)
@@ -555,15 +470,6 @@ Differences in `diff -u' format:
 + [stub] wait() not implemented yet.
 + (wait-bad-pid) end
 + wait-bad-pid: exit(0)
-Acceptable output:
-  (wait-bad-pid) begin
-  (wait-bad-pid) end
-  wait-bad-pid: exit(0)
-Differences in `diff -u' format:
-  (wait-bad-pid) begin
-+ [stub] wait() not implemented yet.
-  (wait-bad-pid) end
-  wait-bad-pid: exit(0)
 pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/multi-recurse:multi-recurse -- -q   -f run 'multi-recurse 15' < /dev/null 2> tests/userprog/multi-recurse.errors > tests/userprog/multi-recurse.output
 perl -I../.. ../../tests/userprog/multi-recurse.ck tests/userprog/multi-recurse tests/userprog/multi-recurse.result
 FAIL tests/userprog/multi-recurse
@@ -869,27 +775,27 @@ pass tests/userprog/open-bad-ptr
 pass tests/userprog/open-twice
 pass tests/userprog/close-normal
 pass tests/userprog/close-twice
-FAIL tests/userprog/close-bad-fd
+pass tests/userprog/close-bad-fd
 pass tests/userprog/read-normal
 pass tests/userprog/read-bad-ptr
 pass tests/userprog/read-boundary
 pass tests/userprog/read-zero
 pass tests/userprog/read-stdout
-FAIL tests/userprog/read-bad-fd
+pass tests/userprog/read-bad-fd
 pass tests/userprog/write-normal
 pass tests/userprog/write-bad-ptr
 pass tests/userprog/write-boundary
 pass tests/userprog/write-zero
 pass tests/userprog/write-stdin
-FAIL tests/userprog/write-bad-fd
+pass tests/userprog/write-bad-fd
 FAIL tests/userprog/fork-once
 FAIL tests/userprog/fork-multiple
 FAIL tests/userprog/fork-recursive
 FAIL tests/userprog/fork-read
 FAIL tests/userprog/fork-close
 FAIL tests/userprog/fork-boundary
-FAIL tests/userprog/exec-once
-FAIL tests/userprog/exec-arg
+pass tests/userprog/exec-once
+pass tests/userprog/exec-arg
 FAIL tests/userprog/exec-boundary
 FAIL tests/userprog/exec-missing
 pass tests/userprog/exec-bad-ptr
@@ -941,7 +847,7 @@ pass tests/threads/priority-preempt
 pass tests/threads/priority-sema
 pass tests/threads/priority-condvar
 pass tests/threads/priority-donate-chain
-33 of 95 tests failed.
+28 of 95 tests failed.
 ../../tests/Make.tests:28: recipe for target 'check' failed
 make[1]: *** [check] Error 1
 make[1]: Leaving directory '/workspaces/PintOS_team8/pintos-kaist/userprog/build'
