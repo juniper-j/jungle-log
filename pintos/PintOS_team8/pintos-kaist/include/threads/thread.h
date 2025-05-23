@@ -107,17 +107,16 @@ struct thread {
 	struct list donations;              /* 우선순위 donations를 추적하기 위한 리스트 */
 	struct list_elem d_elem;            /* donations 리스트에 들어갈 element */
 
-	
-#ifdef USERPROG
-	/* Owned by userprog/process.c. */
-	uint64_t *pml4;                     /* Page map level 4 for this thread (address space). */
-
 	/* Parent thread (used for wait/exit sync). */
 	struct thread *parent;  			/* 해당 스레드를 생성한 부모 스레드 포인터 */
 
 	/* File Descriptor Table (FDT) */
 	struct file *fd_table[FD_MAX];          /* 파일 디스크립터 테이블 */
 	int next_fd;                       		/* 다음 파일 디스크립터 번호 (보통 2부터 시작) */
+	
+#ifdef USERPROG
+	/* Owned by userprog/process.c. */
+	uint64_t *pml4;                     /* Page map level 4 for this thread (address space). */
 #endif
 #ifdef VM
 	/* Table for whole virtual memory owned by thread. */
