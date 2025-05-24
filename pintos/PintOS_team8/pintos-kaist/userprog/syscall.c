@@ -34,6 +34,7 @@ struct file *process_get_file(int fd);
 
 
 /* === [1] MSR 레지스터 초기화: syscall 진입점 설정 === */ 
+
 #define MSR_STAR 0xc0000081         /* Segment selector msr */
 #define MSR_LSTAR 0xc0000082        /* Long mode SYSCALL target */
 #define MSR_SYSCALL_MASK 0xc0000084 /* Mask for the eflags */
@@ -55,6 +56,7 @@ syscall_init (void)
 
 
 /* === [2] 메인 syscall 핸들러 === */
+
 void
 syscall_handler (struct intr_frame *f) 
 {
@@ -275,6 +277,22 @@ filesize(int fd)
 	return size;
 }
 
+/***************************************************************
+ * read - 파일 디스크립터로부터 데이터를 읽어 사용자 버퍼에 저장
+ *
+ * 기능:
+ *  - fd가 0이면 표준 입력(stdin)으로 간주하고, 키보드로부터 한 글자씩 입력 받아 buffer에 저장
+ *  - 그 외에는 파일 디스크립터를 통해 열린 파일을 조회하고, 해당 파일에서 최대 size 바이트를 읽음
+ * 
+ * 매개변수:
+ *  - int fd: 읽기 대상의 파일 디스크립터 (0은 키보드 입력으로 처리)
+ *  - void *buffer: 읽은 데이터를 저장할 유저 공간의 버퍼 포인터
+ *  - unsigned size: 읽을 최대 바이트 수
+ * 
+ * 반환값:
+ *  - 실제로 읽은 바이트 수
+ *  - 실패 시 -1 반환 (예: 유효하지 않은 fd, 파일 NULL 등)
+ ***************************************************************/
 int 
 read(int fd, void *buffer, unsigned size) 
 {
@@ -372,7 +390,21 @@ unsigned tell(int fd) {
 	return pos;
 }
 
-
+/***************************************************************
+ * close - 열린 파일 디스크립터를 닫고 자원을 해제
+ * 
+ * 기능:
+ *  - fd가 유효한지 검사 (범위 및 NULL 여부 확인)
+ *  - 해당 fd에 연결된 파일 포인터가 존재하면 file_close() 호출로 파일 닫기
+ *  - 이후 현재 스레드의 fd_table에서 해당 항목을 NULL로 설정하여 자원 해제
+ *  - 모든 파일 연산은 전역 락(filelock)으로 보호
+ * 
+ * 매개변수:
+ *  - int fd: 닫을 대상 파일의 파일 디스크립터
+ * 
+ * 반환값:
+ *  - 성공 시 0, 실패 시 -1
+ ***************************************************************/
 void 
 close(int fd) 							 // 🚨 이거 손봐야 함
 {
@@ -422,6 +454,21 @@ validate_address(const uint64_t addr)
 	}
 }
 
+/***************************************************************
+ * validate_buffer - 유저가 전달한 연속된 버퍼 영역이 유효한지 검사
+ * 
+ * @buffer: 유저 공간의 시작 주소
+ * @size: 검사할 버퍼의 바이트 크기
+ * 
+ * 기능:
+ * - buffer부터 buffer + size까지의 메모리 영역이 유저 주소 공간에 
+ *   있고, 현재 프로세스의 페이지 테이블에 매핑되어 있는지 검사
+ * - PGSIZE 단위로 점프하며 각 페이지의 시작 주소를 validate_address()로 확인
+ * 
+ * 주의:
+ * - 마지막 바이트가 다음 페이지에 걸쳐 있을 경우 누락 가능성 있음
+ *   → 이를 방지하려면 추가로 `validate_address(buffer + size - 1)` 호출 필요
+ ***************************************************************/
 void 
 validate_buffer(const void *buffer, size_t size) 
 {	/* 연속된 버퍼 영역이 유효한지 검사 */
@@ -430,6 +477,25 @@ validate_buffer(const void *buffer, size_t size)
 	}
 }
 
+/***************************************************************
+ * validate_cstring - 유저가 전달한 null-terminated 문자열이 
+ *                    전체 페이지 범위 내에서 유효한지 검사
+ *
+ * @s: 검사할 유저 문자열 포인터 (null로 끝나는 문자열)
+ * 
+ * 기능:
+ * - 문자열의 시작 주소 s부터 null 문자('\0')를 만날 때까지 유효성 검사 수행
+ * - validate_address()를 통해 현재 포인터가 속한 페이지의 유효성을 확인
+ * - 페이지 끝에 도달하면 다음 페이지로 넘어가며 반복
+ * 
+ * 목적:
+ * - 유저 공간에서 넘어온 문자열이 커널 주소를 침범하거나 unmapped된
+ *   메모리를 참조하지 않도록 보호
+ *
+ * 종료 조건:
+ * - '\0'을 만나면 정상 종료
+ * - 유효하지 않은 주소를 만나면 validate_address() 내부에서 exit(-1)
+ ***************************************************************/
 void 
 validate_cstring(const char *s) 
 {	/* 길이가 불명확한 null-terminated 문자열 검사 */
