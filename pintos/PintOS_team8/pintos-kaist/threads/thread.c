@@ -209,7 +209,7 @@ thread_create (const char *name, int priority, thread_func *function, void *aux)
 	/* 2. 스레드 초기화 및 TID 설정 */
 	init_thread (t, name, priority);     	// 이름과 우선순위 설정
 	tid = t->tid = allocate_tid ();      	// 고유한 TID 할당
-	// t->parent = thread_current();  			// 현재 실행 중인 스레드를 부모로 저장
+	t->parent = thread_current();  			// 현재 실행 중인 스레드를 부모로 저장
 
 	/* 3. 새 스레드가 실행할 함수와 컨텍스트 설정 */
 	t->tf.rip = (uintptr_t) kernel_thread;	// 실행 시작 지점을 kernel_thread로 설정
@@ -710,7 +710,9 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->base_priority = priority;
 	list_init(&t->donations);
 
-	
+	sema_init(t->sema_wait, 0);
+	sema_init(t->sema_exit, 0);
+	sema_init(t->sema_fork, 0);
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should

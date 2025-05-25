@@ -15,6 +15,8 @@
 #include "filesys/file.h"
 #include "threads/palloc.h"
 #include <string.h>
+#include "userprog/process.h"
+
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
@@ -131,6 +133,7 @@ void
 halt(void)
 {
 	power_off();
+	NOT_REACHED ();
 }
 
 /***************************************************************
@@ -145,22 +148,51 @@ halt(void)
  *  - int status: 종료 시 부모 프로세스에게 전달할 상태 코드
  ***************************************************************/
 void 
-exit(int status) {
+exit(int status) 
+{	/* Only print exit status if the process is a user process (has a parent). */
 	struct thread *cur = thread_current();
-	printf("%s: exit(%d)\n", cur -> name, status);
+	if (cur->parent != NULL)	// 🚨 여기 고쳤는데 제대로 되는지 확인해봐야 함
+		printf("%s: exit(%d)\n", cur->name, status);
 	thread_exit();
+	NOT_REACHED ();
 }
 
 pid_t 
-fork(const char *thread_name) {
-	// TODO
-	printf("[stub] fork() not implemented yet.\n");
-	return -1;
+fork(const char *thread_name) 
+{
+	lock_acquire(&filelock);
+	struct thread *cur = thread_current();
+	memcpy(&cur->parent_if, &cur->tf, sizeof(struct intr_frame));
+	pid_t fork_result = process_fork(thread_name, &cur->parent_if);
+
+	if (fork_result < 0 || fork_result == NULL)
+		return TID_ERROR; 
+
+	lock_release(&filelock);
+	return fork_result;
 }
 
+/***************************************************************
+ * exec - 현재 프로세스를 주어진 커맨드라인 문자열로 새 프로그램으로 교체
+ * 
+ * @cmd_line: 실행할 프로그램 이름 및 인자들이 포함된 문자열 (null-terminated)
+ * 
+ * 기능:
+ * - cmd_line 전체를 안전하게 복사할 새 페이지를 할당 (palloc_get_page)
+ * - 문자열 복사 후 process_exec()를 호출하여 현재 프로세스를 새로운 실행 파일로 교체
+ * - process_exec()는 성공 시 절대 복귀하지 않으며, 실패 시 -1 반환
+ * 
+ * 반환값:
+ * - 성공 시: 절대 도달하지 않음 (NOT_REACHED)
+ * - 실패 시: -1 (페이지 할당 실패 또는 process_exec() 실패 시)
+ * 
+ * 주의:
+ * - exec()는 현재 실행 중인 프로세스를 완전히 덮어쓰기 때문에
+ *   이후의 코드는 절대 실행되지 않아야 하며, NOT_REACHED로 표시됨
+ ***************************************************************/
 int 
-exec(const char *cmd_line) {
-	// 페이지 할당 받고, cmd_line 옮겨서 그걸로 process_exec()
+exec(const char *cmd_line) 
+{
 	char *cmd_copy = palloc_get_page(PAL_ZERO);
 	if (cmd_copy == NULL)
 		return -1;
@@ -171,10 +203,42 @@ exec(const char *cmd_line) {
 }
 
 int 
-wait(pid_t pid) {
-	// TODO
-	printf("[stub] wait() not implemented yet.\n");
-	return -1;
+wait(pid_t pid) 
+{
+	struct thread *cur = thread_current();
+	struct thread *child = NULL;
+
+	/* 자식인지 확인 -> child_list 
+	pid가 자식이 아니거나 이미 기다린 적이 있다면 -1 반환 */
+	process_wait(pid);
+
+	sema_down (&child->sema_wait);
+	sema_up (&child->sema_exit);
+
+	return;
+}
+
+int wait (tid_t pid) {
+    struct thread *cur = thread_current();
+    struct thread *child = NULL;
+    struct list_elem *e;
+    int child_status;
+
+    for (e = list_begin (&cur->children); e != list_end (&cur->children); e = list_next (e)) {
+        struct thread *result = list_entry (e, struct thread, elem);
+        if (result->tid = pid)
+        {
+            child = result;
+            child_status = child->status;
+            break;
+        }
+    }
+
+    if (child == NULL) return -1;
+    sema_down (&child->sema_wait);
+	// sema_up (cur->sema_wait);
+    sema_up (&child->sema_status);
+    return child_status;
 }
 
 /***************************************************************
@@ -200,11 +264,28 @@ create (const char *file, unsigned initial_size)
 	return success;
 }
 
+/***************************************************************
+ * remove - 파일 시스템에서 주어진 이름의 파일을 삭제
+ * 
+ * @file: 삭제할 파일의 이름 (null-terminated 문자열)
+ * 
+ * 기능:
+ * - filesys_remove()를 호출하여 해당 파일 이름을 디렉토리 엔트리에서 제거함
+ * - 파일이 열려 있어도 이름만 제거되며, open 중인 파일은 여전히 읽기/쓰기가 가능
+ * - 삭제된 파일은 이름이 사라진 상태로 남아 있다가, 모든 fd가 닫히면 메타데이터와 함께 완전히 제거됨
+ * - 이름이 사라졌기 때문에, 다른 프로세스는 이후 해당 파일을 open()할 수 없음
+ * 
+ * 반환값:
+ * - 삭제에 성공한 경우 true
+ * - 실패한 경우 false (예: 존재하지 않는 파일, 디렉토리 열기 실패 등)
+ ***************************************************************/
 bool 
-remove(const char *file) {
-	// TODO
-	printf("[stub] remove() not implemented yet.\n");
-	return false;
+remove(const char *file) 
+{
+	lock_acquire(&filelock);
+	bool success = filesys_remove(file);
+	lock_release(&filelock);
+	return success;
 }
 
 /***************************************************************
@@ -370,23 +451,70 @@ write (int fd, const void *buffer, unsigned size)
 	return bytes_written;
 }
 
+/***************************************************************
+ * seek - 열린 파일의 읽기/쓰기 위치를 지정한 바이트 위치로 이동
+ * 
+ * @fd: 대상 파일의 파일 디스크립터
+ * @position: 이동할 바이트 위치 (파일 시작부터의 오프셋)
+ * 
+ * 기능:
+ * - fd가 유효하고 해당 파일이 열려 있으면 file_seek()으로 위치 이동
+ * - 파일 끝을 넘는 위치도 설정은 가능하지만, 이후 read/write 동작은 제한됨
+ ***************************************************************/
+void 
+seek(int fd, unsigned position) 
+{
+	lock_acquire (&filelock);
 
-void seek(int fd, unsigned position) {
-	if ((int)position < 0 || position > filesize(fd)) {
-		// 유효하지 않은 seek 요청
+	if (fd < 0 || fd >= FD_MAX) 
+	{	// 유효하지 않은 fd면 읽기 실패
+		lock_release(&filelock);
 		return;
 	}
-	file_seek(process_get_file(fd), position);
+
+	struct file *file = process_get_file(fd);
+	if (file == NULL) 
+	{	// 파일이 NULL이면 읽기 실패
+		lock_release(&filelock);
+		return;
+	}
+
+	file_seek(file, position);
+	lock_release(&filelock);
 }
 
+/***************************************************************
+ * tell - 열린 파일에서 다음 읽기 또는 쓰기가 수행될 바이트 위치 반환
+ * 
+ * @fd: 대상 파일의 파일 디스크립터
+ * 
+ * 기능:
+ * - fd가 유효하고 파일이 열려 있다면, 현재 오프셋을 file_tell()로 조회
+ * 
+ * 반환값:
+ * - 현재 파일 위치 (바이트 단위)
+ * - 실패 시 (fd 오류 또는 NULL 파일) -1 반환
+ ***************************************************************/
+unsigned 
+tell(int fd) 
+{
+	lock_acquire (&filelock);
 
-unsigned tell(int fd) {
-	struct file *f = process_get_file(fd);
-	if (f == NULL) return -1;
+	if (fd < 0 || fd >= FD_MAX) 
+	{	// 유효하지 않은 fd면 읽기 실패
+		lock_release(&filelock);
+		return -1;
+	}
 
-	unsigned pos = file_tell(f);
-	unsigned total = filesize(fd);
-	printf("현재 위치: %u / 총 %u 바이트\n", pos, total);
+	struct file *file = process_get_file(fd);
+	if (file == NULL) 
+	{	// 파일이 NULL이면 읽기 실패
+		lock_release(&filelock);
+		return -1;
+	}
+
+	unsigned pos = file_tell(file);
+	lock_release(&filelock);
 	return pos;
 }
 
@@ -584,4 +712,18 @@ file *process_get_file(int fd)
 	if (fd < 2 || fd >= FD_MAX || fdt == NULL)
 		return NULL;
 	return fdt;
+}
+
+struct 
+thread *process_find_child (int pid) 
+{
+	struct list *child_list = &thread_current()->child_list;
+	struct list_elem *e;
+  	for (e = list_begin(child_list); e != list_end(child_list); e = list_next(e))
+    {
+      struct thread *child = list_entry (e, struct thread, child_elem);
+      if (child->pid == pid)
+        return child;
+    }
+  	return NULL;
 }

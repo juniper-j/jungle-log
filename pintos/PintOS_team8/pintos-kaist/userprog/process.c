@@ -18,6 +18,7 @@
 #include "threads/mmu.h"
 #include "threads/vaddr.h"
 #include "intrinsic.h"
+#include "userprog/syscall.h"
 #ifdef VM
 #include "vm/vm.h"
 #endif
@@ -150,8 +151,18 @@ initd (void *f_name) {
 tid_t
 process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	/* Clone current thread to new thread.*/
-	return thread_create (name,
-			PRI_DEFAULT, __do_fork, thread_current ());
+	tid_t child_tid =  thread_create (name, PRI_DEFAULT, __do_fork, (void *) if_);
+
+	if (child_tid == TID_ERROR)
+		return TID_ERROR;
+
+	struct thread *child_process = process_find_child(child_tid);
+	sema_down(&child_process->sema_fork);
+
+	/* ✅ TODO:
+	현재 스레드의 포크 성공 여부 (or exit_status) bool 타입으로 반환해서 에러 확인 */
+
+	return child_tid;
 }
 
 #ifndef VM
@@ -166,7 +177,7 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	bool writable;
 
 	/* 1. TODO: If the parent_page is kernel page, then return immediately. */
-
+	if (kern)
 	/* 2. Resolve VA from the parent's page map level 4. */
 	parent_page = pml4_get_page (parent->pml4, va);
 
@@ -193,11 +204,11 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 static void
 __do_fork (void *aux) {
 	struct intr_frame if_;
-	struct thread *parent = (struct thread *) aux;
 	struct thread *current = thread_current ();
-	/* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_) */
-	struct intr_frame *parent_if;
-	bool succ = true;
+	struct thread *parent = current->parent;
+
+	struct intr_frame *parent_if = (struct intr_frame *) aux;
+	bool success = true;
 
 	/* 1. Read the cpu context to local stack. */
 	memcpy (&if_, parent_if, sizeof (struct intr_frame));
@@ -226,7 +237,7 @@ __do_fork (void *aux) {
 	process_init ();
 
 	/* Finally, switch to the newly created process. */
-	if (succ)
+	if (success)
 		do_iret (&if_);
 error:
 	thread_exit ();
@@ -404,12 +415,6 @@ argument_stack (char **argv, int argc, void **rsp)
 	
 // }
 
-int isWaitOn = 1; // 전역변수로써 선언
-
-void processOff()
-{
-	isWaitOn = 0;
-}
 
 /* Waits for thread TID to die and returns its exit status.  If
  * it was terminated by the kernel (i.e. killed due to an
@@ -421,13 +426,11 @@ void processOff()
  * This function will be implemented in problem 2-2.  For now, it
  * does nothing. */
 int
-process_wait (tid_t child_tid UNUSED) 
+process_wait (pid_t child_pid) 
 {
-	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
-	 * XXX:       to add infinite loop here before
-	 * XXX:       implementing the process_wait. */
-	while (isWaitOn) {}
-	return -1;
+	struct process_info *chile = process_find_child(child_pid);
+
+
 }
 
 /* Exit the process. This function is called by thread_exit (). */
