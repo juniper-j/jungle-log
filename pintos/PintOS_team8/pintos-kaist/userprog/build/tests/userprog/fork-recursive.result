@@ -1,0 +1,27 @@
+FAIL
+Kernel panic in run: PANIC at ../../threads/thread.c:477 in thread_current(): assertion `t->status == THREAD_RUNNING' failed.
+Call stack: 0x8004217edf 0x80042073b6 0x800421cfdd 0x800421cb36 0x8004208e03 0x8004209221 0x8004207ba3 0x8004207ec5 0x8004207cc5 0x8004207562 0x8004208f5a 0x8004209221 0x800421cae0 0x8004208e03 0x8004209221 0x800421b627 0x800421d09e 0x800421ccf5 0x800421cba8 0x40014c 0x4001f9 0x400257 0x400cf8
+Translation of call stack:
+0x0000008004217edf: debug_panic (lib/kernel/debug.c:32)
+0x00000080042073b6: thread_current (threads/thread.c:479)
+0x000000800421cfdd: exit (userprog/syscall.c:153)
+0x000000800421cb36: syscall_entry (??:?)
+0x0000008004208e03: intr_handler (threads/interrupt.c:412)
+0x0000008004209221: intr_entry (threads/intr-stubs.o:?)
+0x0000008004207ba3: thread_launch (threads/thread.c:827)
+0x0000008004207ec5: schedule (threads/thread.c:886)
+0x0000008004207cc5: do_schedule (threads/thread.c:844)
+0x0000008004207562: thread_yield (threads/thread.c:534)
+0x0000008004208f5a: intr_handler (threads/interrupt.c:435)
+0x0000008004209221: intr_entry (threads/intr-stubs.o:?)
+0x000000800421cae0: page_fault (userprog/exception.c:139)
+0x0000008004208e03: intr_handler (threads/interrupt.c:412)
+0x0000008004209221: intr_entry (threads/intr-stubs.o:?)
+0x000000800421b627: process_fork (userprog/process.c:173)
+0x000000800421d09e: fork (userprog/syscall.c:166)
+0x000000800421ccf5: syscall_handler (userprog/syscall.c:74)
+0x000000800421cba8: no_sti (userprog/syscall-entry.o:?)
+0x000000000040014c: (unknown)
+0x00000000004001f9: (unknown)
+0x0000000000400257: (unknown)
+0x0000000000400cf8: (unknown)

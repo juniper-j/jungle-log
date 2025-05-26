@@ -151,6 +151,7 @@ void
 exit(int status) 
 {	/* Only print exit status if the process is a user process (has a parent). */
 	struct thread *cur = thread_current();
+	cur->exit_status = status;
 	if (cur->parent != NULL)	// 🚨 여기 고쳤는데 제대로 되는지 확인해봐야 함
 		printf("%s: exit(%d)\n", cur->name, status);
 	thread_exit();
@@ -160,7 +161,6 @@ exit(int status)
 pid_t 
 fork(const char *thread_name) 
 {
-	lock_acquire(&filelock);
 	struct thread *cur = thread_current();
 	memcpy(&cur->parent_if, &cur->tf, sizeof(struct intr_frame));
 	pid_t fork_result = process_fork(thread_name, &cur->parent_if);
@@ -168,7 +168,6 @@ fork(const char *thread_name)
 	if (fork_result < 0 || fork_result == NULL)
 		return TID_ERROR; 
 
-	lock_release(&filelock);
 	return fork_result;
 }
 
@@ -205,40 +204,11 @@ exec(const char *cmd_line)
 int 
 wait(pid_t pid) 
 {
-	struct thread *cur = thread_current();
-	struct thread *child = NULL;
+	int status = process_wait(pid);
 
 	/* 자식인지 확인 -> child_list 
 	pid가 자식이 아니거나 이미 기다린 적이 있다면 -1 반환 */
-	process_wait(pid);
-
-	sema_down (&child->sema_wait);
-	sema_up (&child->sema_exit);
-
-	return;
-}
-
-int wait (tid_t pid) {
-    struct thread *cur = thread_current();
-    struct thread *child = NULL;
-    struct list_elem *e;
-    int child_status;
-
-    for (e = list_begin (&cur->children); e != list_end (&cur->children); e = list_next (e)) {
-        struct thread *result = list_entry (e, struct thread, elem);
-        if (result->tid = pid)
-        {
-            child = result;
-            child_status = child->status;
-            break;
-        }
-    }
-
-    if (child == NULL) return -1;
-    sema_down (&child->sema_wait);
-	// sema_up (cur->sema_wait);
-    sema_up (&child->sema_status);
-    return child_status;
+	return status;
 }
 
 /***************************************************************

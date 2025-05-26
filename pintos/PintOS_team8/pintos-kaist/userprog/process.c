@@ -19,6 +19,7 @@
 #include "threads/vaddr.h"
 #include "intrinsic.h"
 #include "userprog/syscall.h"
+#include "filesys/file.h"
 #ifdef VM
 #include "vm/vm.h"
 #endif
@@ -151,18 +152,25 @@ initd (void *f_name) {
 tid_t
 process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	/* Clone current thread to new thread.*/
-	tid_t child_tid =  thread_create (name, PRI_DEFAULT, __do_fork, (void *) if_);
+	tid_t child_pid =  thread_create (name, PRI_DEFAULT, __do_fork, (void *) if_);
 
-	if (child_tid == TID_ERROR)
+	if (child_pid == TID_ERROR)
 		return TID_ERROR;
 
-	struct thread *child_process = process_find_child(child_tid);
-	sema_down(&child_process->sema_fork);
+	struct thread *child = process_find_child(child_pid);
+	sema_down(&child->sema_fork);
 
 	/* ✅ TODO:
-	현재 스레드의 포크 성공 여부 (or exit_status) bool 타입으로 반환해서 에러 확인 */
+	현재 스레드의 포크 성공 여부 (or exit_status) bool 타입으로 반환해서 에러 확인 -> 핑구 참고 */
+	/* e.g.
+	if (thread_current()->child_do_fork_success == false) {
+        return TID_ERROR;
+    }*/
 
-	return child_tid;
+	/* ✅ TODO:
+	자식이 로드되다가 오류로 exit한 경우 TID_ERROR 처리 -> 쥐로그 참고 */
+
+	return child_pid;
 }
 
 #ifndef VM
@@ -176,22 +184,32 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	void *newpage;
 	bool writable;
 
-	/* 1. TODO: If the parent_page is kernel page, then return immediately. */
-	if (kern)
+	/* 1. If the parent_page is kernel page, then return immediately. */
+	if (is_kernel_vaddr (va))
+		return true;
+
 	/* 2. Resolve VA from the parent's page map level 4. */
 	parent_page = pml4_get_page (parent->pml4, va);
+	if (parent_page == NULL)
+		return false;
 
-	/* 3. TODO: Allocate new PAL_USER page for the child and set result to
-	 *    TODO: NEWPAGE. */
+	/* 3. Allocate new PAL_USER page for the child and set result to NEWPAGE. */
+	newpage = palloc_get_page(PAL_USER);
+	if (newpage == NULL)
+		return false;
 
-	/* 4. TODO: Duplicate parent's page to the new page and
-	 *    TODO: check whether parent's page is writable or not (set WRITABLE
-	 *    TODO: according to the result). */
+	/* 4. Duplicate parent's page to the new page and check whether parent's page 
+	 	  is writable or not (set WRITABLE according to the result). */
+	memcpy(newpage, parent_page,PGSIZE);
+	writable = is_writable(pte);
 
-	/* 5. Add new page to child's page table at address VA with WRITABLE
-	 *    permission. */
+	/* 5. Add new page to child's page table at address VA with WRITABLE permission. */
 	if (!pml4_set_page (current->pml4, va, newpage, writable)) {
-		/* 6. TODO: if fail to insert page, do error handling. */
+		/* 6. if fail to insert page, do error handling. */
+		// pml4_destroy(current->pml4);		// 🚨 이거 넣어야 하는지 체크해보기 -> 핑구
+        // current->exit_status = -1;
+		palloc_free_page(newpage);
+		return false;
 	}
 	return true;
 }
@@ -212,6 +230,7 @@ __do_fork (void *aux) {
 
 	/* 1. Read the cpu context to local stack. */
 	memcpy (&if_, parent_if, sizeof (struct intr_frame));
+	if_.R.rax = 0;
 
 	/* 2. Duplicate PT */
 	current->pml4 = pml4_create();
@@ -236,10 +255,31 @@ __do_fork (void *aux) {
 
 	process_init ();
 
+	/* 부모의 파일 디스크립터 테이블을 자식에게 복사한다.
+	 * - fd 0, 1 (stdin, stdout)은 그대로 포인터 공유
+	 * - fd 2 이상은 file_duplicate()로 복제
+	 * - next_fd도 복사해줘야 자식이 새로운 파일을 열 수 있음
+	 */
+	for (int fd = 0; fd < FD_MAX; fd++) {
+		struct file *file = parent->fd_table[fd];
+		if (file == NULL)
+			continue;
+
+		if (fd == 0 || fd == 1) {	// 표준 입출력은 그대로 공유
+			current->fd_table[fd] = file;
+		} else {					// 일반 파일은 복제
+			current->fd_table[fd] = file_duplicate(file);
+		}
+	}
+	current->next_fd = parent->next_fd;
+
+	sema_up(&current->sema_fork);
+
 	/* Finally, switch to the newly created process. */
 	if (success)
 		do_iret (&if_);
 error:
+	sema_up(&current->sema_fork);
 	thread_exit ();
 }
 
@@ -310,7 +350,7 @@ process_exec (void *f_name)
 	   그 후, ELF 진입 주소(entry point)를 intr_frame.rip에 저장하고,
 	   사용자 스택의 초기 위치도 intr_frame.rsp(스택 포인터)에 설정한다.
 	   이 과정을 통해 유저 프로그램 실행 준비를 마친다. */
-	success = load (file_name, &_if);
+	success = load(file_name, &_if);
 
 	/* ------------------ [4단계: 사용자 스택 세팅] ------------------ */
 	/* argument_stack 함수는 다음을 유저 스택에 쌓음:
@@ -403,18 +443,12 @@ argument_stack (char **argv, int argc, void **rsp)
     **(void ***)rsp = 0;						// 리턴 주소 dummy (실행 종료 시 사용)
 }
 
+int is_wait_on = 1; // 전역변수로써 선언
 
-// 혼자 해보기
-// void
-// argument_stack (char **argv, int argc, struct intr_frame *if_)
-// {
-// 	int stack_shift;		// 포인터를 이동시킬 단위
-// 	int stack_ptr;			// 포인터
-	
-// 	/* ------------------ [1단계: 프로그램 이름(Name), 인자 문자열(Data) push] ------------------ */
-	
-// }
-
+void process_off()
+{
+	is_wait_on = 0;
+}
 
 /* Waits for thread TID to die and returns its exit status.  If
  * it was terminated by the kernel (i.e. killed due to an
@@ -428,21 +462,47 @@ argument_stack (char **argv, int argc, void **rsp)
 int
 process_wait (pid_t child_pid) 
 {
-	struct process_info *chile = process_find_child(child_pid);
+	// struct thread *cur = thread_current();
+	// if (list_empty(&cur->child_list)) {
+	// 	while (is_wait_on) {}
+	// 	return -1;
+	// }
 
+	timer_msleep(3000);
+	struct thread *child = process_find_child(child_pid);
+	if (child == NULL) 
+		return -1;
 
+    sema_down (&child->sema_wait);
+
+	int child_status = child->exit_status;
+	list_remove(&child->child_elem);
+
+    sema_up (&child->sema_exit);
+    return child_status;
 }
 
 /* Exit the process. This function is called by thread_exit (). */
 void
 process_exit (void) {
-	struct thread *curr = thread_current ();
+	struct thread *cur = thread_current ();
 	/* TODO: Your code goes here.
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
 
+	/* Modify current process to close the running file */
+	for (int fd = 0; fd < FD_MAX; fd++) {
+		if (cur->fd_table[fd] != NULL)
+			close(fd);
+	}
+	// palloc_free_multiple(cur->fd_table, FDT_PAGES);
+	file_close(cur->running); // 현재 실행 중인 파일도 닫는다.
+
 	process_cleanup ();
+
+	sema_up(&cur->sema_wait);
+	sema_down(&cur->sema_exit);
 }
 
 /* Free the current process's resources. */
@@ -633,6 +693,10 @@ load (const char *file_name, struct intr_frame *if_) {
 		}
 	}
 
+	/* 현재 실행 중인 파일은 수정할 수 없게 막기 */
+	t->running = file;	
+	file_deny_write(file);
+
 	/* Set up stack. */
 	if (!setup_stack (if_))
 		goto done;
@@ -647,7 +711,7 @@ load (const char *file_name, struct intr_frame *if_) {
 
 done:
 	/* We arrive here whether the load is successful or not. */
-	file_close (file);
+	// file_close (file);
 	return success;
 }
 
