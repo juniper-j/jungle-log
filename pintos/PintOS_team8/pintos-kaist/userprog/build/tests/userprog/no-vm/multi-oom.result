@@ -1,17 +1,16 @@
 FAIL
-Test output failed to match any acceptable form.
-
-Acceptable output:
-  (multi-oom) begin
-  (multi-oom) Spawned at least 10 children.
-  (multi-oom) success. Program forked 10 iterations.
-  (multi-oom) end
-Differences in `diff -u' format:
-  (multi-oom) begin
-- (multi-oom) Spawned at least 10 children.
-- (multi-oom) success. Program forked 10 iterations.
-- (multi-oom) end
-
-(Process exit codes are excluded for matching purposes.)
-
-(User fault messages are excluded for matching purposes.)
+Kernel panic in run: PANIC at ../../userprog/exception.c:97 in kill(): Kernel bug - unexpected interrupt in kernel
+Call stack: 0x8004217eec 0x800421cbfd 0x8004208e10 0x800420922e 0x800421ede6 0x800421d426 0x800421cfe9 0x800421cd51 0x40011c 0x4003a7 0x40044b 0x400fb0
+Translation of call stack:
+0x0000008004217eec: debug_panic (lib/kernel/debug.c:32)
+0x000000800421cbfd: kill (userprog/exception.c:103)
+0x0000008004208e10: intr_handler (threads/interrupt.c:412)
+0x000000800420922e: intr_entry (threads/intr-stubs.o:?)
+0x000000800421ede6: file_close (filesys/file.c:57)
+0x000000800421d426: open (userprog/syscall.c:291)
+0x000000800421cfe9: syscall_handler (userprog/syscall.c:95)
+0x000000800421cd51: no_sti (userprog/syscall-entry.o:?)
+0x000000000040011c: (unknown)
+0x00000000004003a7: (unknown)
+0x000000000040044b: (unknown)
+0x0000000000400fb0: (unknown)

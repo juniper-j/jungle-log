@@ -29,6 +29,73 @@ static bool load (const char *file_name, struct intr_frame *if_);
 static void initd (void *f_name);
 static void __do_fork (void *);
 
+
+/***************************************************************
+ * process_add_file - 현재 스레드의 파일 디스크립터 테이블(fd_table)에
+ *                    주어진 파일을 등록하고, 사용 가능한 fd를 할당
+ *
+ * @f: 커널이 open() 시스템콜을 통해 연 파일을 나타내는 포인터 (struct file*)
+ *
+ * 기능:
+ * - 현재 실행 중인 스레드(thread_current())의 fd_table에서 비어 있는 fd 슬롯을 탐색
+ * - 가장 빠르게 사용 가능한 파일 디스크립터(fd)를 찾아 해당 위치에 파일 포인터 등록
+ * - fd 할당 후, next_fd 힌트를 필요시 한 칸 앞으로 갱신하여 다음 탐색 효율을 높임
+ *
+ * 사용 목적:
+ * - 시스템 콜 open()을 통해 열린 파일을 현재 프로세스에 등록하고 fd로 추상화
+ * - 유저 프로그램은 파일을 직접 다룰 수 없기 때문에, 정수형 fd를 통해 간접적으로 접근
+ *
+ * 반환값:
+ * - 성공 시: 등록된 fd 값 (2 이상 정수)
+ * - 실패 시: -1 (모든 fd 슬롯이 사용 중일 경우)
+ ***************************************************************/
+int
+process_add_file (struct file *f)	// 🚨 이거 손봐야 함
+{
+	struct thread *cur = thread_current();
+	int fd = 2;				// 항상 2부터 탐색 (stdin=0, stdout=1 제외)
+	
+	while (fd < FD_MAX && cur->fd_table[fd] != NULL) {
+		fd ++;				// 현재 fd가 사용 중이면 다음 슬롯으로 이동
+	}
+	
+	if (fd >= FD_MAX) {
+		return -1;			// 유효한 슬롯을 찾지 못했다면 실패 처리
+	}
+
+	cur->fd_table[fd] = f;	// 비어있는 슬롯을 찾으면 파일 포인터 등록
+
+	if (cur->next_fd == fd) {
+		cur->next_fd++;		// 이번에 할당한 fd가 next_fd라면 next_fd를 한 칸 이동
+	}
+
+	return fd;	// 유저에게 fd를 반환 → 이 값을 통해 이후 read/write/close 등을 수행
+}
+
+struct 
+file *process_get_file(int fd)
+{
+	struct thread *cur = thread_current();
+	struct file *fdt = cur->fd_table[fd];
+	if (fd < 2 || fd >= FD_MAX || fdt == NULL)
+		return NULL;
+	return fdt;
+}
+
+struct 
+thread *process_find_child (int pid) 
+{
+	struct list *child_list = &thread_current()->child_list;
+	struct list_elem *e;
+  	for (e = list_begin(child_list); e != list_end(child_list); e = list_next(e))
+    {
+      struct thread *child = list_entry (e, struct thread, child_elem);
+      if (child->pid == pid)
+        return child;
+    }
+  	return NULL;
+}
+
 /* General process initializer for initd and other process. */
 static void
 process_init (void) {
@@ -113,18 +180,6 @@ process_create_initd (const char *file_name) {
  ***************************************************************/
 static void
 initd (void *f_name) {
-	// struct thread *curr = thread_current();
-
-	// // ✅ fd table 초기화
-	// curr->fdt = palloc_get_page(PAL_ZERO);
-	// if (curr->fdt == NULL)
-	// 	PANIC("Failed to allocate file descriptor table");
-
-	// for (int i = 0; i < FD_MAX; i++)
-	// 	curr->fdt[i] = NULL;
-
-	// curr->next_fd = 2;
-
 #ifdef VM
 	/* STEP 1: 가상 메모리 기능이 켜져 있다면 SPT(보조 페이지 테이블) 초기화 
 	 * - 페이지 폴트 처리 시 사용할 supplemental page table을 생성합니다.
@@ -149,11 +204,13 @@ initd (void *f_name) {
 
 /* Clones the current process as `name`. Returns the new process's thread id, or
  * TID_ERROR if the thread cannot be created. */
-tid_t
+pid_t
 process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	/* Clone current thread to new thread.*/
-	tid_t child_pid =  thread_create (name, PRI_DEFAULT, __do_fork, (void *) if_);
+	struct thread *parent = thread_current();
+	memcpy(&parent->parent_if, if_, sizeof(struct intr_frame));
 
+	int child_pid =  thread_create (name, PRI_DEFAULT, __do_fork, parent);
 	if (child_pid == TID_ERROR)
 		return TID_ERROR;
 
@@ -169,6 +226,8 @@ process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 
 	/* ✅ TODO:
 	자식이 로드되다가 오류로 exit한 경우 TID_ERROR 처리 -> 쥐로그 참고 */
+	if (child->exit_status < 0)
+		return process_wait(child_pid);
 
 	return child_pid;
 }
@@ -200,7 +259,7 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 
 	/* 4. Duplicate parent's page to the new page and check whether parent's page 
 	 	  is writable or not (set WRITABLE according to the result). */
-	memcpy(newpage, parent_page,PGSIZE);
+	memcpy(newpage, parent_page, PGSIZE);
 	writable = is_writable(pte);
 
 	/* 5. Add new page to child's page table at address VA with WRITABLE permission. */
@@ -208,7 +267,7 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 		/* 6. if fail to insert page, do error handling. */
 		// pml4_destroy(current->pml4);		// 🚨 이거 넣어야 하는지 체크해보기 -> 핑구
         // current->exit_status = -1;
-		palloc_free_page(newpage);
+		// palloc_free_page(newpage);		// 이거 빼도 되는지 확인하기
 		return false;
 	}
 	return true;
@@ -222,13 +281,12 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 static void
 __do_fork (void *aux) {
 	struct intr_frame if_;
+	struct thread *parent = (struct thread *) aux;
 	struct thread *current = thread_current ();
-	struct thread *parent = current->parent;
-
-	struct intr_frame *parent_if = (struct intr_frame *) aux;
 	bool success = true;
 
 	/* 1. Read the cpu context to local stack. */
+	struct intr_frame *parent_if = &parent->parent_if;
 	memcpy (&if_, parent_if, sizeof (struct intr_frame));
 	if_.R.rax = 0;
 
@@ -253,8 +311,6 @@ __do_fork (void *aux) {
 	 * TODO:       from the fork() until this function successfully duplicates
 	 * TODO:       the resources of parent.*/
 
-	process_init ();
-
 	/* 부모의 파일 디스크립터 테이블을 자식에게 복사한다.
 	 * - fd 0, 1 (stdin, stdout)은 그대로 포인터 공유
 	 * - fd 2 이상은 file_duplicate()로 복제
@@ -264,7 +320,6 @@ __do_fork (void *aux) {
 		struct file *file = parent->fd_table[fd];
 		if (file == NULL)
 			continue;
-
 		if (fd == 0 || fd == 1) {	// 표준 입출력은 그대로 공유
 			current->fd_table[fd] = file;
 		} else {					// 일반 파일은 복제
@@ -274,13 +329,14 @@ __do_fork (void *aux) {
 	current->next_fd = parent->next_fd;
 
 	sema_up(&current->sema_fork);
+	process_init ();
 
 	/* Finally, switch to the newly created process. */
 	if (success)
 		do_iret (&if_);
 error:
 	sema_up(&current->sema_fork);
-	thread_exit ();
+	thread_exit ();		// exit(TID_ERROR); 로 바꿔야하나?
 }
 
 /*************************************************************
@@ -468,7 +524,8 @@ process_wait (pid_t child_pid)
 	// 	return -1;
 	// }
 
-	timer_msleep(3000);
+	// timer_msleep(3000);
+
 	struct thread *child = process_find_child(child_pid);
 	if (child == NULL) 
 		return -1;
@@ -759,6 +816,7 @@ validate_segment (const struct Phdr *phdr, struct file *file) {
 	/* It's okay. */
 	return true;
 }
+
 
 #ifndef VM
 /* Codes of this block will be ONLY USED DURING project 2.

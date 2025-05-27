@@ -9,7 +9,7 @@ void syscall_init (void);               // 시스템 콜 인터럽트 핸들러 
 /* Process-related syscalls */
 void halt(void);                        // 시스템 종료 (전원 OFF)
 void exit(int status);                  // 현재 프로세스를 종료하며 상태 코드 전달 (성공이 0, 나머지는 실패)
-pid_t fork (const char *thread_name);   // 현재 프로세스를 복제하여 자식 프로세스를 생성
+pid_t fork (const char *thread_name, struct intr_frame *if_);   // 현재 프로세스를 복제하여 자식 프로세스를 생성
 int exec(const char *cmd_line);         // 명령어 라인에 해당하는 프로그램을 현재 프로세스에 로드하여 실행
 int wait(tid_t pid);                    // 자식 프로세스가 종료될 때까지 기다리고 종료 코드를 반환
 

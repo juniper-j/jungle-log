@@ -1,7 +1,1 @@
-FAIL
-Kernel panic in run: PANIC at ../../userprog/process.c:384 in process_exec(): executed an unreachable statement
-Call stack: 0x8004217edf 0x800421bae3 0x1b
-Translation of call stack:
-0x0000008004217edf: debug_panic (lib/kernel/debug.c:32)
-0x000000800421bae3: process_exec (userprog/process.c:385)
-0x000000000000001b: (unknown)
+PASS

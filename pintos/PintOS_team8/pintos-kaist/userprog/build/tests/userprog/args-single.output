@@ -20,12 +20,12 @@ Executing 'args-single onearg':
 (args) end
 args-single: exit(0)
 Execution of 'args-single' complete.
-Timer: 404 ticks
-Thread: 320 idle ticks, 69 kernel ticks, 17 user ticks
+Timer: 126 ticks
+Thread: 49 idle ticks, 62 kernel ticks, 16 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 232 writes
 hd1:0: 102 reads, 0 writes
-Console: 955 characters output
+Console: 954 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

@@ -21,8 +21,9 @@
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
 static struct lock filelock;
-int process_add_file (struct file *f);
-struct file *process_get_file(int fd);
+void validate_address(const uint64_t addr);
+void validate_buffer(const void *buffer, size_t size);
+void validate_cstring(const char *s);
 
 
 /* System call.
@@ -71,7 +72,8 @@ syscall_handler (struct intr_frame *f)
 			exit(f->R.rdi);
 			break;
 		case SYS_FORK:
-			f->R.rax = fork(f->R.rdi);
+			validate_cstring(f->R.rdi);
+			f->R.rax = fork(f->R.rdi, f);
 			break;
 		case SYS_EXEC:
 			validate_cstring(f->R.rdi);
@@ -159,16 +161,9 @@ exit(int status)
 }
 
 pid_t 
-fork(const char *thread_name) 
+fork(const char *thread_name, struct intr_frame *if_) 
 {
-	struct thread *cur = thread_current();
-	memcpy(&cur->parent_if, &cur->tf, sizeof(struct intr_frame));
-	pid_t fork_result = process_fork(thread_name, &cur->parent_if);
-
-	if (fork_result < 0 || fork_result == NULL)
-		return TID_ERROR; 
-
-	return fork_result;
+	return process_fork(thread_name, if_);
 }
 
 /***************************************************************
@@ -607,93 +602,4 @@ validate_cstring(const char *s)
 			ptr++;
 		}
 	}
-}
-
-/***************************************************************
- * process_add_file - 현재 스레드의 파일 디스크립터 테이블(fd_table)에
- *                    주어진 파일을 등록하고, 사용 가능한 fd를 할당
- *
- * @f: 커널이 open() 시스템콜을 통해 연 파일을 나타내는 포인터 (struct file*)
- *
- * 기능:
- * - 현재 실행 중인 스레드(thread_current())의 fd_table에서 비어 있는 fd 슬롯을 탐색
- * - 가장 빠르게 사용 가능한 파일 디스크립터(fd)를 찾아 해당 위치에 파일 포인터 등록
- * - fd 할당 후, next_fd 힌트를 필요시 한 칸 앞으로 갱신하여 다음 탐색 효율을 높임
- *
- * 사용 목적:
- * - 시스템 콜 open()을 통해 열린 파일을 현재 프로세스에 등록하고 fd로 추상화
- * - 유저 프로그램은 파일을 직접 다룰 수 없기 때문에, 정수형 fd를 통해 간접적으로 접근
- *
- * 반환값:
- * - 성공 시: 등록된 fd 값 (2 이상 정수)
- * - 실패 시: -1 (모든 fd 슬롯이 사용 중일 경우)
- ***************************************************************/
-int
-process_add_file (struct file *f)	// 🚨 이거 손봐야 함
-{
-	struct thread *cur = thread_current();
-	struct file *fdt;
-	int fd = 2;				// 항상 2부터 탐색 (stdin=0, stdout=1 제외)
-	
-	// printf("🗄️ process is adding file...\n");
-	while (fd < FD_MAX && cur->fd_table[fd] != NULL) {
-		fd ++;				// 현재 fd가 사용 중이면 다음 슬롯으로 이동
-		// printf("1️⃣ fd is now %d\n", fd);
-	}
-	
-	if (fd >= FD_MAX) {
-		return -1;			// 유효한 슬롯을 찾지 못했다면 실패 처리
-	}
-
-	cur->fd_table[fd] = f;	// 비어있는 슬롯을 찾으면 파일 포인터 등록
-
-	if (cur->next_fd == fd) {
-		cur->next_fd++;		// 이번에 할당한 fd가 next_fd라면 next_fd를 한 칸 이동
-		// printf("2️⃣ fd is now %d\n", fd);
-	}
-
-	// printf("3️⃣ fd is now %d\n", fd);
-	return fd;	// 유저에게 fd를 반환 → 이 값을 통해 이후 read/write/close 등을 수행
-}
-
-
-// // 파일 객체에 대한 파일 디스크립터를 생성하는 함수 // 🚨 이거 참고하삼
-// int process_add_file(struct file *f)
-// {
-// 	struct thread *curr = thread_current();
-// 	struct file **fdt = curr->fdt;
-
-// 	// limit을 넘지 않는 범위 안에서 빈 자리 탐색
-// 	while (curr->next_fd < FDT_COUNT_LIMIT && fdt[curr->next_fd])
-// 		curr->next_fd++;
-// 	if (curr->next_fd >= FDT_COUNT_LIMIT)
-// 		return -1;
-// 	fdt[curr->next_fd] = f;
-
-// 	return curr->next_fd;
-// }
-
-
-struct 
-file *process_get_file(int fd)
-{
-	struct thread *cur = thread_current();
-	struct file *fdt = cur->fd_table[fd];
-	if (fd < 2 || fd >= FD_MAX || fdt == NULL)
-		return NULL;
-	return fdt;
-}
-
-struct 
-thread *process_find_child (int pid) 
-{
-	struct list *child_list = &thread_current()->child_list;
-	struct list_elem *e;
-  	for (e = list_begin(child_list); e != list_end(child_list); e = list_next(e))
-    {
-      struct thread *child = list_entry (e, struct thread, child_elem);
-      if (child->pid == pid)
-        return child;
-    }
-  	return NULL;
 }

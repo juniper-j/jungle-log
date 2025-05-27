@@ -209,6 +209,7 @@ thread_create (const char *name, int priority, thread_func *function, void *aux)
 	/* 2. 스레드 초기화 및 TID 설정 */
 	init_thread (t, name, priority);     	// 이름과 우선순위 설정
 	tid = t->tid = allocate_tid ();      	// 고유한 TID 할당
+	t->pid = tid;							// pid -> tid
 	t->parent = thread_current();  			// 현재 실행 중인 스레드를 부모로 저장
 	list_push_back(&thread_current()->child_list, &t->child_elem);	// 현재 스레드의 자식으로 추가
 

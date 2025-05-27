@@ -15,12 +15,12 @@ Executing 'create-null':
 (create-null) begin
 create-null: exit(-1)
 Execution of 'create-null' complete.
-Timer: 412 ticks
-Thread: 340 idle ticks, 65 kernel ticks, 8 user ticks
+Timer: 119 ticks
+Thread: 45 idle ticks, 67 kernel ticks, 9 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 79 reads, 232 writes
 hd1:0: 102 reads, 0 writes
-Console: 840 characters output
+Console: 839 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...
