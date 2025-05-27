@@ -1,6 +1,7 @@
 {
     "name": "pintos-dev",
     "dockerFile": "Dockerfile",
+    "workspaceFolder": "/workspaces/PintOS_team8",
     "remoteUser": "jungle",
     "customizations": {
         "vscode": {

@@ -1,0 +1,18 @@
+FAIL
+Kernel panic in run: PANIC at ../../threads/thread.c:477 in thread_current(): assertion `t->status == THREAD_RUNNING' failed.
+Call stack: 0x8004217edf 0x80042073b6 0x800421cfdd 0x800421cb36 0x8004208e03 0x8004209221 0x800421b627 0x800421d09e 0x800421ccf5 0x800421cba8 0x4006a9 0x4002a6 0x400fa7 0x400ff0
+Translation of call stack:
+0x0000008004217edf: debug_panic (lib/kernel/debug.c:32)
+0x00000080042073b6: thread_current (threads/thread.c:479)
+0x000000800421cfdd: exit (userprog/syscall.c:153)
+0x000000800421cb36: syscall_entry (??:?)
+0x0000008004208e03: intr_handler (threads/interrupt.c:412)
+0x0000008004209221: intr_entry (threads/intr-stubs.o:?)
+0x000000800421b627: process_fork (userprog/process.c:173)
+0x000000800421d09e: fork (userprog/syscall.c:166)
+0x000000800421ccf5: syscall_handler (userprog/syscall.c:74)
+0x000000800421cba8: no_sti (userprog/syscall-entry.o:?)
+0x00000000004006a9: (unknown)
+0x00000000004002a6: (unknown)
+0x0000000000400fa7: (unknown)
+0x0000000000400ff0: (unknown)

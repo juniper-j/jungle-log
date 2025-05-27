@@ -17,11 +17,11 @@ Executing 'write-stdin':
 write-stdin: exit(0)
 Execution of 'write-stdin' complete.
 Timer: 409 ticks
-Thread: 337 idle ticks, 66 kernel ticks, 8 user ticks
+Thread: 335 idle ticks, 62 kernel ticks, 13 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 80 reads, 232 writes
 hd1:0: 102 reads, 0 writes
-Console: 857 characters output
+Console: 858 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...
