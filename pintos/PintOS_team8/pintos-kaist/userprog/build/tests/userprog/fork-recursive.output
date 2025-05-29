@@ -41,11 +41,11 @@ child: exit(4)
 fork-recursive: exit(0)
 Execution of 'fork-recursive' complete.
 Timer: 227 ticks
-Thread: 53 idle ticks, 87 kernel ticks, 90 user ticks
+Thread: 50 idle ticks, 77 kernel ticks, 101 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 87 reads, 236 writes
 hd1:0: 104 reads, 0 writes
-Console: 1605 characters output
+Console: 1606 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

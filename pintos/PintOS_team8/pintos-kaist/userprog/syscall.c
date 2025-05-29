@@ -154,8 +154,10 @@ exit(int status)
 {	/* Only print exit status if the process is a user process (has a parent). */
 	struct thread *cur = thread_current();
 	cur->exit_status = status;
+
 	if (cur->parent != NULL)	// 🚨 여기 고쳤는데 제대로 되는지 확인해봐야 함
 		printf("%s: exit(%d)\n", cur->name, status);
+	
 	thread_exit();
 	NOT_REACHED ();
 }
@@ -506,7 +508,7 @@ close(int fd) 							 // 🚨 이거 손봐야 함
 	if (fd < 0 || fd >= FD_MAX) 
 	{	// 유효하지 않은 fd면 읽기 실패
 		lock_release(&filelock);
-		return -1;
+		return;
 	}
 
 	// 파일 디스크립터 → 커널의 파일 구조체 획득
@@ -514,12 +516,13 @@ close(int fd) 							 // 🚨 이거 손봐야 함
 	if (file == NULL) 
 	{	// 파일이 NULL이면 읽기 실패
 		lock_release(&filelock);
-		return -1;
+		return;
 	}
 
 	file_close(file);
 	thread_current()->fd_table[fd] = NULL;
 	lock_release(&filelock);
+	return;
 }
 
 
@@ -542,7 +545,6 @@ void
 validate_address(const uint64_t addr) 
 {	/* 단일 주소가 유효한지 검사 */
 	if (addr == NULL || !is_user_vaddr(addr) || pml4_get_page(thread_current()->pml4, addr) == NULL) {
-		// printf("🌏 don't look up!!!\n");
 		exit(-1);
 	}
 }

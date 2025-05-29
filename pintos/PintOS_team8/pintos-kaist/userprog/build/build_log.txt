@@ -231,16 +231,16 @@ pintos -v -k -T 600 -m 20 -m 20   --fs-disk=10 -p tests/userprog/no-vm/multi-oom
 perl -I../.. ../../tests/userprog/no-vm/multi-oom.ck tests/userprog/no-vm/multi-oom tests/userprog/no-vm/multi-oom.result
 FAIL tests/userprog/no-vm/multi-oom
 Kernel panic in run: PANIC at ../../userprog/exception.c:97 in kill(): Kernel bug - unexpected interrupt in kernel
-Call stack: 0x8004217eec 0x800421cbfd 0x8004208e10 0x800420922e 0x800421ede6 0x800421d426 0x800421cfe9 0x800421cd51 0x40011c 0x4003a7 0x40044b 0x400fb0
+Call stack: 0x8004217eec 0x800421cc1e 0x8004208e10 0x800420922e 0x800421ee08 0x800421d447 0x800421d00a 0x800421cd72 0x40011c 0x4003a7 0x40044b 0x400fb0
 Translation of call stack:
 0x0000008004217eec: debug_panic (lib/kernel/debug.c:32)
-0x000000800421cbfd: kill (userprog/exception.c:103)
+0x000000800421cc1e: kill (userprog/exception.c:103)
 0x0000008004208e10: intr_handler (threads/interrupt.c:412)
 0x000000800420922e: intr_entry (threads/intr-stubs.o:?)
-0x000000800421ede6: file_close (filesys/file.c:57)
-0x000000800421d426: open (userprog/syscall.c:291)
-0x000000800421cfe9: syscall_handler (userprog/syscall.c:95)
-0x000000800421cd51: no_sti (userprog/syscall-entry.o:?)
+0x000000800421ee08: file_close (filesys/file.c:57)
+0x000000800421d447: open (userprog/syscall.c:293)
+0x000000800421d00a: syscall_handler (userprog/syscall.c:95)
+0x000000800421cd72: no_sti (userprog/syscall-entry.o:?)
 0x000000000040011c: (unknown)
 0x00000000004003a7: (unknown)
 0x000000000040044b: (unknown)

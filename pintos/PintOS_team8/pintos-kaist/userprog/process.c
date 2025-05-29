@@ -218,13 +218,6 @@ process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	sema_down(&child->sema_fork);
 
 	/* ✅ TODO:
-	현재 스레드의 포크 성공 여부 (or exit_status) bool 타입으로 반환해서 에러 확인 -> 핑구 참고 */
-	/* e.g.
-	if (thread_current()->child_do_fork_success == false) {
-        return TID_ERROR;
-    }*/
-
-	/* ✅ TODO:
 	자식이 로드되다가 오류로 exit한 경우 TID_ERROR 처리 -> 쥐로그 참고 */
 	if (child->exit_status < 0)
 		return process_wait(child_pid);
@@ -335,6 +328,7 @@ __do_fork (void *aux) {
 	if (success)
 		do_iret (&if_);
 error:
+	current->exit_status = -1;  // 명시적으로 설정
 	sema_up(&current->sema_fork);
 	thread_exit ();		// exit(TID_ERROR); 로 바꿔야하나?
 }
@@ -518,19 +512,12 @@ void process_off()
 int
 process_wait (pid_t child_pid) 
 {
-	// struct thread *cur = thread_current();
-	// if (list_empty(&cur->child_list)) {
-	// 	while (is_wait_on) {}
-	// 	return -1;
-	// }
-
-	// timer_msleep(3000);
-
 	struct thread *child = process_find_child(child_pid);
-	if (child == NULL) 
+	if (child == NULL || child->waited) 
 		return -1;
 
-    sema_down (&child->sema_wait);
+	child->waited = true;  // ✅ 중복 wait 방지
+	sema_down (&child->sema_wait);
 
 	int child_status = child->exit_status;
 	list_remove(&child->child_elem);
@@ -550,8 +537,10 @@ process_exit (void) {
 
 	/* Modify current process to close the running file */
 	for (int fd = 0; fd < FD_MAX; fd++) {
-		if (cur->fd_table[fd] != NULL)
+		if (cur->fd_table[fd] != NULL) {
 			close(fd);
+			cur->fd_table[fd] = NULL;
+		}
 	}
 	// palloc_free_multiple(cur->fd_table, FDT_PAGES);
 	file_close(cur->running); // 현재 실행 중인 파일도 닫는다.

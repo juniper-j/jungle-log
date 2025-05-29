@@ -114,10 +114,11 @@ struct thread {
 	struct intr_frame parent_if;    	/* Fork 시 전달될 부모의 intr_frame */
 	struct list child_list;         	/* 자식 프로세스 리스트 */
 	struct list_elem child_elem;    	/* 부모의 child_list에 들어갈 리스트 노드 */
-	struct semaphore sema_wait;    	/* wait()용 동기화 */
-	struct semaphore sema_exit;    	/* exit()용 동기화 */
-	struct semaphore sema_fork;    	/* fork 완료 여부 대기 */
+	struct semaphore sema_wait;    		/* wait()용 동기화 */
+	struct semaphore sema_exit;    		/* exit()용 동기화 */
+	struct semaphore sema_fork;    		/* fork 완료 여부 대기 */
 	int exit_status;					/* 유저 프로그램의 종료 코드 */
+	bool waited;  						/* 이미 wait한 자식인지 표시 */
 
 	/* File Descriptor Table (FDT) */
 	struct file *fd_table[FD_MAX];      /* 파일 디스크립터 테이블 */
