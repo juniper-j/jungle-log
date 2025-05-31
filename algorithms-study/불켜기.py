@@ -30,6 +30,8 @@ for _ in range(m):
 
 # [2] BFS를 위한 준비
 q = deque()
+visited = set()
+start = (1, 1)
 count = 0
 
 # 4방향 (위쪽부터 시계방향으로)
@@ -37,3 +39,12 @@ dxy = [(-1, 0), (0, 1), (1, 0), (0, -1)]
 
 
 # [3] 
+q.append(start)
+visited.add(start)
+
+while q:
+    cur = q.popleft()
+    for nxt in adj[cur]:   # 지정된 이동만 고려
+        if nxt not in visited:
+            visited.add(nxt)
+            q.append(nxt)
